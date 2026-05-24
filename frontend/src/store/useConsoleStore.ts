@@ -22,6 +22,17 @@ export interface ConsoleState {
   activeState: SatelliteState | null;
   activeAER: ObserverAER | null;
   activePasses: PassWindow[];
+  activeEphemeris: SatelliteState[];
+  showOrbitPath: boolean;
+  showGroundTrack: boolean;
+  showObserver: boolean;
+  followActiveObject: boolean;
+  liveTrackingEnabled: boolean;
+  liveConnectionStatus: 'DISCONNECTED' | 'CONNECTING' | 'LIVE' | 'PAUSED' | 'ERROR';
+  liveRateHz: number;
+  liveObjectStates: Record<number, SatelliteState>;
+  lastTelemetryFrameUtc: string | null;
+  liveErrors: string[];
   logs: string[];
   activePanel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources';
 
@@ -37,6 +48,17 @@ export interface ConsoleState {
   setActiveState: (state: SatelliteState | null) => void;
   setActiveAER: (aer: ObserverAER | null) => void;
   setActivePasses: (passes: PassWindow[]) => void;
+  setActiveEphemeris: (ephemeris: SatelliteState[]) => void;
+  setShowOrbitPath: (show: boolean) => void;
+  setShowGroundTrack: (show: boolean) => void;
+  setShowObserver: (show: boolean) => void;
+  setFollowActiveObject: (follow: boolean) => void;
+  setLiveTrackingEnabled: (enabled: boolean) => void;
+  setLiveConnectionStatus: (status: 'DISCONNECTED' | 'CONNECTING' | 'LIVE' | 'PAUSED' | 'ERROR') => void;
+  setLiveRateHz: (rate: number) => void;
+  setLiveObjectStates: (states: Record<number, SatelliteState>) => void;
+  setLastTelemetryFrameUtc: (timestamp: string | null) => void;
+  setLiveErrors: (errors: string[]) => void;
   addLog: (log: string) => void;
   setActivePanel: (panel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources') => void;
 }
@@ -60,6 +82,17 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
   activeState: null,
   activeAER: null,
   activePasses: [],
+  activeEphemeris: [],
+  showOrbitPath: true,
+  showGroundTrack: true,
+  showObserver: true,
+  followActiveObject: false,
+  liveTrackingEnabled: false,
+  liveConnectionStatus: 'DISCONNECTED',
+  liveRateHz: 1.0,
+  liveObjectStates: {},
+  lastTelemetryFrameUtc: null,
+  liveErrors: [],
   logs: ['Console Initialized. System standby.'],
   activePanel: 'mission_control',
 
@@ -114,6 +147,7 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
     activeState: null,
     activeAER: null,
     activePasses: [],
+    activeEphemeris: [],
     lastApiError: null,
     logs: obj 
       ? [...state.logs, `Active target focus set to: ${obj.name} (NORAD: ${obj.norad_id}).`]
@@ -130,6 +164,40 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
   setActiveAER: (aer) => set({ activeAER: aer }),
 
   setActivePasses: (passes) => set({ activePasses: passes }),
+
+  setActiveEphemeris: (ephemeris) => set({ activeEphemeris: ephemeris }),
+
+  setShowOrbitPath: (show) => set((state) => ({
+    showOrbitPath: show,
+    logs: [...state.logs, `Settings: Orbit path rendering ${show ? 'ENABLED' : 'DISABLED'}.`]
+  })),
+
+  setShowGroundTrack: (show) => set((state) => ({
+    showGroundTrack: show,
+    logs: [...state.logs, `Settings: Ground track rendering ${show ? 'ENABLED' : 'DISABLED'}.`]
+  })),
+
+  setShowObserver: (show) => set((state) => ({
+    showObserver: show,
+    logs: [...state.logs, `Settings: Observer station marker rendering ${show ? 'ENABLED' : 'DISABLED'}.`]
+  })),
+
+  setFollowActiveObject: (follow) => set((state) => ({
+    followActiveObject: follow,
+    logs: [...state.logs, `Settings: Camera lock tracking follow-mode ${follow ? 'ENABLED' : 'DISABLED'}.`]
+  })),
+
+  setLiveTrackingEnabled: (enabled) => set({ liveTrackingEnabled: enabled }),
+
+  setLiveConnectionStatus: (status) => set({ liveConnectionStatus: status }),
+
+  setLiveRateHz: (rate) => set({ liveRateHz: rate }),
+
+  setLiveObjectStates: (states) => set({ liveObjectStates: states }),
+
+  setLastTelemetryFrameUtc: (timestamp) => set({ lastTelemetryFrameUtc: timestamp }),
+
+  setLiveErrors: (errors) => set({ liveErrors: errors }),
 
   addLog: (log) => set((state) => ({ logs: [...state.logs, log] })),
 

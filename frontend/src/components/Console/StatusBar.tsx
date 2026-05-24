@@ -10,7 +10,11 @@ export const StatusBar: React.FC = () => {
     selectedObjects, 
     activeObject, 
     observer, 
-    addLog
+    addLog,
+    liveTrackingEnabled,
+    liveConnectionStatus,
+    liveRateHz,
+    lastTelemetryFrameUtc
   } = useConsoleStore();
 
   const [cesiumTokenMissing, setCesiumTokenMissing] = useState(false);
@@ -151,6 +155,31 @@ export const StatusBar: React.FC = () => {
           <span className="mono-text" style={{ color: 'var(--text-bright)' }}>
             {observer.name}
           </span>
+        </div>
+
+        {/* Live tracking status badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRight: '1px solid var(--border-color)', paddingRight: '16px' }}>
+          <span style={{ color: 'var(--text-muted)' }}>Live Tracking:</span>
+          <span className={`status-indicator ${
+            !liveTrackingEnabled ? 'status-muted' :
+            liveConnectionStatus === 'LIVE' ? 'status-ok' : 
+            liveConnectionStatus === 'PAUSED' ? 'status-warning' : 'status-error'
+          }`} style={!liveTrackingEnabled ? { backgroundColor: 'rgba(75, 85, 99, 0.5)', boxShadow: 'none' } : undefined} />
+          <span className="mono-text" style={{ 
+            fontSize: '11px', 
+            textTransform: 'uppercase',
+            color: !liveTrackingEnabled ? 'var(--text-muted)' :
+                   liveConnectionStatus === 'LIVE' ? 'var(--accent-green)' : 
+                   liveConnectionStatus === 'PAUSED' ? 'var(--accent-orange)' : 'var(--accent-red)',
+            fontWeight: 600
+          }}>
+            {!liveTrackingEnabled ? 'OFFLINE' : liveConnectionStatus === 'LIVE' ? `LIVE (${liveRateHz}Hz)` : liveConnectionStatus}
+          </span>
+          {liveTrackingEnabled && lastTelemetryFrameUtc && (
+            <span className="mono-text" style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: '4px' }}>
+              [{lastTelemetryFrameUtc.substring(11, 19)}]
+            </span>
+          )}
         </div>
 
         {/* Connection status badge */}

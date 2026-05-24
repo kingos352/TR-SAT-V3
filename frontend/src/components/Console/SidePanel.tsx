@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { useConsoleStore } from '../../store/useConsoleStore';
-import { syncCatalogGroup, searchCatalog } from '../../api/client';
+import { 
+  syncCatalogGroup, 
+  searchCatalog, 
+  getSpaceTrackStatus, 
+  testSpaceTrackAuth, 
+  syncSpaceTrackNorad 
+} from '../../api/client';
 
 export const SidePanel: React.FC = () => {
   const {
@@ -21,6 +27,11 @@ export const SidePanel: React.FC = () => {
   const [syncGroup, setSyncGroup] = useState<string>('stations');
   const [syncLoading, setSyncLoading] = useState<boolean>(false);
   const [syncResult, setSyncResult] = useState<any>(null);
+
+  // Space-Track States
+  const [stStatus, setStStatus] = useState<string>('Unknown');
+  const [stLoading, setStLoading] = useState<boolean>(false);
+  const [stNoradId, setStNoradId] = useState<string>('');
 
   // Search Form States
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -57,6 +68,54 @@ export const SidePanel: React.FC = () => {
       addLog(`Ingestion error: Synchronization failed for '${syncGroup}' (${err.message})`);
     } finally {
       setSyncLoading(false);
+    }
+  };
+
+  const checkStStatus = async () => {
+    setStLoading(true);
+    addLog(`Space-Track: Checking configuration status...`);
+    try {
+      const res = await getSpaceTrackStatus();
+      setStStatus(res.is_configured ? 'Configured' : 'Not Configured');
+      addLog(`Space-Track Status: ${res.is_configured ? 'Configured' : 'Not Configured'} - ${res.message}`);
+    } catch (err: any) {
+      setStStatus('Error');
+      addLog(`Space-Track Status Error: ${err.message}`);
+    } finally {
+      setStLoading(false);
+    }
+  };
+
+  const testStAuth = async () => {
+    setStLoading(true);
+    addLog(`Space-Track: Testing authentication...`);
+    try {
+      const res = await testSpaceTrackAuth();
+      addLog(`Space-Track Auth Test: ${res.success ? 'Success' : 'Failed'} - ${res.message}`);
+    } catch (err: any) {
+      addLog(`Space-Track Auth Test Error: ${err.message}`);
+    } finally {
+      setStLoading(false);
+    }
+  };
+
+  const syncStNorad = async () => {
+    if (!stNoradId) return;
+    const norad = parseInt(stNoradId, 10);
+    if (isNaN(norad)) {
+      addLog(`Space-Track Sync Error: Invalid NORAD ID.`);
+      return;
+    }
+    
+    setStLoading(true);
+    addLog(`Space-Track: Initiating sync for NORAD ID ${norad}...`);
+    try {
+      const res = await syncSpaceTrackNorad(norad);
+      addLog(`Space-Track Sync Success: Fetched ${res.fetched_count}, Inserted TLEs ${res.inserted_tles}.`);
+    } catch (err: any) {
+      addLog(`Space-Track Sync Error: ${err.message}`);
+    } finally {
+      setStLoading(false);
     }
   };
 
@@ -171,6 +230,93 @@ export const SidePanel: React.FC = () => {
               </div>
             </div>
           )}
+        </section>
+
+        {/* Space-Track Authenticated Catalog Section */}
+        <section style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+          <h2 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', marginBottom: '10px', fontWeight: 600 }}>
+            Space-Track Authenticated Catalog
+          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontSize: '11px', color: 'var(--text-bright)' }}>
+            <span>Status:</span>
+            <span style={{ color: stStatus === 'Configured' ? 'var(--accent-green)' : stStatus === 'Not Configured' ? 'var(--accent-orange)' : 'var(--text-muted)' }}>
+              {stStatus}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+            <button
+              onClick={checkStStatus}
+              disabled={stLoading}
+              style={{
+                flex: 1,
+                padding: '6px 0',
+                borderRadius: '6px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'rgba(3, 7, 18, 0.7)',
+                color: 'var(--text-bright)',
+                fontSize: '11px',
+                cursor: stLoading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Check Status
+            </button>
+            <button
+              onClick={testStAuth}
+              disabled={stLoading}
+              style={{
+                flex: 1,
+                padding: '6px 0',
+                borderRadius: '6px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'rgba(3, 7, 18, 0.7)',
+                color: 'var(--text-bright)',
+                fontSize: '11px',
+                cursor: stLoading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Test Auth
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              placeholder="NORAD ID (e.g. 25544)"
+              value={stNoradId}
+              onChange={(e) => setStNoradId(e.target.value)}
+              disabled={stLoading}
+              style={{
+                flexGrow: 1,
+                padding: '6px 10px',
+                borderRadius: '6px',
+                backgroundColor: 'rgba(3, 7, 18, 0.7)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-bright)',
+                fontSize: '12px',
+                outline: 'none',
+                width: '60%'
+              }}
+            />
+            <button
+              onClick={syncStNorad}
+              disabled={stLoading || !stNoradId}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: stLoading || !stNoradId ? 'rgba(75, 85, 99, 0.5)' : 'var(--accent-blue)',
+                color: 'var(--text-bright)',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: stLoading || !stNoradId ? 'not-allowed' : 'pointer',
+                transition: 'background-color 0.2s',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Sync
+            </button>
+          </div>
         </section>
 
         {/* 2. Catalog Search Section */}

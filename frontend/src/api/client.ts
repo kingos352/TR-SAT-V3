@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 // --- TYPES ---
 
@@ -48,6 +48,16 @@ export interface CatalogSyncResponse {
   inserted_tles: number;
   updated_objects: number;
   skipped_count: number;
+}
+
+export interface SpaceTrackStatusResponse {
+  is_configured: boolean;
+  message: string;
+}
+
+export interface SpaceTrackAuthTestResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface ECEFPosition {
@@ -204,5 +214,23 @@ export async function getCatalogPasses(payload: {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  });
+}
+
+// --- SPACE-TRACK ---
+
+export async function getSpaceTrackStatus(): Promise<SpaceTrackStatusResponse> {
+  return apiRequest<SpaceTrackStatusResponse>(`${API_BASE_URL}/api/v1/spacetrack/status`);
+}
+
+export async function testSpaceTrackAuth(): Promise<SpaceTrackAuthTestResponse> {
+  return apiRequest<SpaceTrackAuthTestResponse>(`${API_BASE_URL}/api/v1/spacetrack/test-auth`, {
+    method: 'POST',
+  });
+}
+
+export async function syncSpaceTrackNorad(noradId: number): Promise<CatalogSyncResponse> {
+  return apiRequest<CatalogSyncResponse>(`${API_BASE_URL}/api/v1/spacetrack/sync/norad/${noradId}`, {
+    method: 'POST',
   });
 }

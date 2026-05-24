@@ -157,11 +157,93 @@ Phase 5 connects the React/TypeScript frontend to the FastAPI backend, implement
 
 ---
 
+## Phase 6: Cesium Selected Object Visualization
+Phase 6 implements the rendering of the active selected satellite, its 3D orbit trajectory, its ground track polyline, and the ground observer station on the 3D CesiumJS globe.
+
+### Coordinate Conversion Strategy
+- **Geodetic (Primary)**: Standard geodetic coordinates (`latitude_deg`, `longitude_deg`, `altitude_km`) are mapped to Cesium's WGS84 ellipsoid surface positions via:
+  `Cesium.Cartesian3.fromDegrees(lon, lat, alt_km * 1000)`
+- **ECEF Cartesian (Secondary)**: Earth-Centered, Earth-Fixed kilometer points are converted to meters in a `Cartesian3` instance for alternative spatial computations.
+- **Ground Track**: Extrapolates geodetic coordinates to altitude = `0` (or `2000m` offset offset for rendering separation) to project the orbit on the globe's surface.
+
+### Visualization Features
+- **Active Satellite Marker**: Renders a large `Color.RED` circular point marker highlighted by a white outer outline, labeled with the satellite name and NORAD catalog ID.
+- **3D Orbit Path**: Draws a cyan/electric blue polyline connecting the points computed over a 90-minute ephemeris window, utilizing `ArcType.NONE` to draw straight lines in space.
+- **Ground Track**: Draws an orange/amber polyline clamped near the surface utilizing `ArcType.GEODESIC` to trace the satellite's ground footprint.
+- **Observer Ground Station**: Places a `Color.BLUE` marker with a text label at the observer ground station's location.
+- **Floating Controls Overlay**: A compact glassmorphic dashboard panel rendered in the top-right of the Cesium container that manages:
+  - Toggling visibility for the Orbit Path, Ground Track, and Observer Station.
+  - Enabling/disabling camera lock-follow mode.
+  - Manual camera fly-to/centering on the active satellite.
+- **Entity Cleanup**: Uses stable entity IDs (`active-satellite`, `active-orbit-path`, `active-ground-track`, `active-observer-station`) to safely update entities without duplicating lines or wiping background base layers.
+
+---
+
+## Phase 7: Live Tracking with WebSocket Telemetry Streaming
+Phase 7 implements live TLE-based tracking by establishing a high-frequency WebSocket connection from React to FastAPI.
+
+### WebSocket Protocol Schema
+- **Endpoint**: `/api/v1/ws/telemetry`
+- **Actions**:
+  - `subscribe`: Starts streaming updates for up to 20 NORAD IDs at a configurable rate (default `1.0` Hz, limits: `0.2` Hz to `5.0` Hz).
+  - `update`: Alters active tracking target lists or rates.
+  - `pause`: Temporarily halts telemetry frame updates.
+  - `resume`: Continues streaming frame updates.
+  - `stop`: Halts transmission and purges target caches.
+- **Frames**:
+  - `status`: Declares connection states (`connected`, `paused`, `resumed`, `stopped`).
+  - `telemetry_frame`: Delivers geodetic coordinates, ellipsoidal altitude, ECEF values, and TLE age/freshness diagnostics for active targets.
+  - `error`: Reports missing TLEs or payload violations.
+
+### Optimization & Performance
+- **Caching**: TLE lines for selected satellites are queried and cached in-memory during WebSocket subscription setup.
+- **In-Memory SGP4 Math**: The WebSocket session runs SGP4 orbital propagation purely in memory during tick intervals. It does not query the database during high-frequency streaming frames, preventing SQLite thread blocks.
+- **Cesium Entity Updates**: Markers on the globe (`live-object-${norad_id}` and `active-satellite`) are mutated in place (`entity.position = ...`) rather than deleted and recreated, preventing camera jitter and glitches during follow locks.
+
+---
+
+## Live TLE-Based Tracking Troubleshooting
+
+Live tracking means: latest available TLE/GP elements + current UTC time + SGP4 propagation.
+**WARNING:** This is not direct spacecraft telemetry. It does not represent direct radar tracking, command telemetry, or collision probability.
+
+**Configuration Details:**
+- WebSocket endpoint: `/api/v1/ws/telemetry`
+- Frontend env variables:
+  ```env
+  VITE_WS_BASE_URL=ws://127.0.0.1:8000
+  VITE_API_BASE_URL=http://127.0.0.1:8000
+  ```
+- Default rate: 1 Hz (Rate limits: 0.2–5 Hz)
+- Max selected objects: 20
+
+If you encounter issues with the live WebSocket telemetry tracking, check the following troubleshooting guidelines:
+
+### 1. Connection Failure (ERROR State)
+*   **Verification**: Ensure the backend FastAPI server is running on `127.0.0.1:8000`. The frontend uses this host for local tracking fallbacks.
+*   **Browser DevTools**: Open Network → WS. You should see an expected status of `101 Switching Protocols`.
+*   **HTTP 404 Error**: If you see HTTP GET 404 on `/api/v1/ws/telemetry`, the frontend is incorrectly calling the WebSocket endpoint as HTTP instead of native WebSocket. Ensure `new WebSocket(...)` is used, not `fetch(...)` or HTTP clients.
+
+### 2. Missing Satellite Positions or Error Frames
+*   **Cause**: The local SQLite database might not contain TLE elements for the requested satellite.
+*   **Fix**: Go to the **Catalog Ingestion** panel on the left sidebar and trigger a sync for the corresponding group.
+
+### 3. Jittery or Resetting Cesium Camera
+*   **Cause**: Camera snapping can happen if the tracked entity is re-assigned on every tick.
+*   **Resolution**: The camera should not reset during live tracking. Ensure "Camera Lock Follow" is handled cleanly in a separate effect.
+
+---
+
+## Space-Track Integration
+The Space-Track API integration is an **optional** feature that allows authenticated fetching of catalog General Perturbation (GP/TLE) data.
+- **Default Behavior**: CelesTrak remains the default, unauthenticated source for catalog synchronizations.
+- **Setup**: To enable Space-Track, you must provide your credentials in the `.env` file using the `SPACETRACK_USERNAME` and `SPACETRACK_PASSWORD` variables.
+- **Security Warning**: The `.env` file contains sensitive credentials and **must not be committed** to version control. An empty template is provided in `.env.example`.
+- **Disclaimer**: Space-Track provides predictive GP/TLE orbital elements. It is an authenticated catalog source, **NOT** a direct spacecraft telemetry or direct operational command link.
+
 ## Roadmap & Deferrals
-The following modules are intentionally excluded from Phase 5 and will be introduced in subsequent phases:
-*   **Phase 6**: Cesium satellite and orbit path rendering (empty interactive globe container renders for now).
-*   **Phase 7**: WebSocket telemetry streaming.
-*   **Phase 8**: Authenticated Space-Track API client integration (credentials are placeholder values only).
+The following modules are intentionally excluded from Phase 7 and will be introduced in subsequent phases:
+*   **Phase 8**: Authenticated Space-Track API client integration completed.
 *   **Phase 9**: Multi-stage conjunction screening (close approach detection).
 *   **Phase 10**: Progressive 20,000+ point catalog visualization.
 *   **Phase 11**: Final UI polish & Turkish explanatory documentation.

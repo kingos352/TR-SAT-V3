@@ -4,6 +4,7 @@ import { SidePanel } from './components/Console/SidePanel';
 import { CesiumViewer } from './components/Globe/CesiumViewer';
 import { TelemetryPanel } from './components/Console/TelemetryPanel';
 import { ObserverPanel } from './components/Console/ObserverPanel';
+import { LiveTrackingPanel } from './components/Console/LiveTrackingPanel';
 
 const App: React.FC = () => {
   return (
@@ -36,7 +37,7 @@ const App: React.FC = () => {
       }}>
         <CesiumViewer />
         
-        {/* Overlay Note */}
+        {/* Overlay Title */}
         <div className="mono-text" style={{
           position: 'absolute',
           top: '16px',
@@ -52,7 +53,7 @@ const App: React.FC = () => {
           pointerEvents: 'none',
           boxShadow: '0 0 15px rgba(6, 182, 212, 0.2)'
         }}>
-          🛰️ Cesium selected-object rendering will be implemented in Phase 6.
+          🛰️ Active Object Visualization (SGP4 Dynamic Orbit)
         </div>
       </main>
 
@@ -68,6 +69,7 @@ const App: React.FC = () => {
         borderLeft: 'none',
         backgroundColor: 'rgba(17, 24, 39, 0.3)'
       }}>
+        <LiveTrackingPanel />
         <TelemetryPanel />
         <ObserverPanel />
       </section>

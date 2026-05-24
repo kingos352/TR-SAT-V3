@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { useConsoleStore } from '../../store/useConsoleStore';
-import { getCatalogState } from '../../api/client';
+import { getCatalogState, getCatalogEphemeris } from '../../api/client';
 
 export const TelemetryPanel: React.FC = () => {
   const {
     activeObject,
     activeState,
     setActiveState,
+    setActiveEphemeris,
     addLog,
     setApiStatus
   } = useConsoleStore();
 
   const [loading, setLoading] = useState(false);
+  const [orbitLoading, setOrbitLoading] = useState(false);
 
   const handleUpdateState = async () => {
     if (!activeObject) return;
@@ -31,6 +33,37 @@ export const TelemetryPanel: React.FC = () => {
       addLog(`Propagation error: State query failed (${err.message})`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateOrbit = async () => {
+    if (!activeObject) {
+      addLog('WARNING: No active object selected.');
+      return;
+    }
+    setOrbitLoading(true);
+    addLog(`Ephemeris: Generating orbit ephemeris for ${activeObject.name} (NORAD: ${activeObject.norad_id})...`);
+    try {
+      const now = new Date();
+      // start = now - 45 mins, end = now + 45 mins, step = 60s
+      const startTime = new Date(now.getTime() - 45 * 60 * 1000).toISOString();
+      const endTime = new Date(now.getTime() + 45 * 60 * 1000).toISOString();
+
+      const ephemeris = await getCatalogEphemeris({
+        norad_id: activeObject.norad_id,
+        start_time_utc: startTime,
+        end_time_utc: endTime,
+        step_seconds: 60
+      });
+
+      setActiveEphemeris(ephemeris);
+      setApiStatus('connected');
+      addLog(`Ephemeris success: Generated ${ephemeris.length} points for 90-minute window.`);
+    } catch (err: any) {
+      setApiStatus('disconnected', err.message);
+      addLog(`Ephemeris error: Failed to generate ephemeris (${err.message})`);
+    } finally {
+      setOrbitLoading(false);
     }
   };
 
@@ -72,23 +105,42 @@ export const TelemetryPanel: React.FC = () => {
             {activeObject.name}
           </h3>
         </div>
-        <button
-          onClick={handleUpdateState}
-          disabled={loading}
-          style={{
-            padding: '6px 12px',
-            borderRadius: '6px',
-            border: 'none',
-            backgroundColor: loading ? 'rgba(75, 85, 99, 0.5)' : 'var(--accent-cyan)',
-            color: 'var(--text-bright)',
-            fontSize: '12px',
-            fontWeight: 600,
-            cursor: loading ? 'not-allowed' : 'pointer',
-            transition: 'background-color 0.2s'
-          }}
-        >
-          {loading ? 'Propagating...' : 'Update State'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={handleUpdateState}
+            disabled={loading}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: 'none',
+              backgroundColor: loading ? 'rgba(75, 85, 99, 0.5)' : 'var(--accent-cyan)',
+              color: 'var(--text-bright)',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            {loading ? 'Propagating...' : 'Update State'}
+          </button>
+          <button
+            onClick={handleUpdateOrbit}
+            disabled={orbitLoading}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: 'none',
+              backgroundColor: orbitLoading ? 'rgba(75, 85, 99, 0.5)' : 'var(--accent-blue)',
+              color: 'var(--text-bright)',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: orbitLoading ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            {orbitLoading ? 'Computing...' : 'Update Orbit'}
+          </button>
+        </div>
       </div>
 
       <div style={{

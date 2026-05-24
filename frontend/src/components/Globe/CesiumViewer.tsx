@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Viewer, 
   Ion, 
@@ -8,7 +8,8 @@ import {
   LabelStyle, 
   VerticalOrigin, 
   ArcType,
-  HeadingPitchRange
+  HeadingPitchRange,
+  PointPrimitiveCollection
 } from 'cesium';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { cartesianFromGeodetic, groundTrackCartesian } from '../../utils/cesiumCoordinates';
@@ -35,8 +36,17 @@ export const CesiumViewer: React.FC = () => {
     addLog,
     liveObjectStates,
     liveTrackingEnabled,
-    selectedObjects
+    selectedObjects,
+    activeConjunctionResult,
+    catalogLayerEnabled,
+    catalogLayerObjects,
+    enableEarthLighting,
+    enableEarthRotation,
+    setEnableEarthLighting,
+    setEnableEarthRotation
   } = useConsoleStore();
+
+  const pointsRef = useRef<PointPrimitiveCollection | null>(null);
 
   // --- 1. Mount Cesium Globe Viewer ---
   useEffect(() => {
@@ -62,6 +72,7 @@ export const CesiumViewer: React.FC = () => {
           selectionIndicator: false,
           navigationHelpButton: false,
           fullscreenButton: false,
+          creditContainer: document.createElement('div'),
         });
 
         // Optimize baseline rendering
@@ -82,6 +93,7 @@ export const CesiumViewer: React.FC = () => {
           // Ignore destruction exceptions
         }
         viewerRef.current = null;
+        pointsRef.current = null;
       }
     };
   }, [addLog]);
@@ -161,6 +173,18 @@ export const CesiumViewer: React.FC = () => {
     }
   }, [followActiveObject, activeObject, activeState]);
 
+  // --- 2.8 Earth Lighting & Rotation Controls ---
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    viewer.scene.globe.enableLighting = enableEarthLighting;
+    viewer.clock.shouldAnimate = enableEarthRotation;
+    if (enableEarthRotation) {
+      viewer.clock.multiplier = 1.0; // 1x real-time speed
+    }
+  }, [enableEarthLighting, enableEarthRotation]);
+
   // --- 3. Update Static Orbit Paths (Only re-drawn on explicit Ephemeris changes) ---
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -178,6 +202,7 @@ export const CesiumViewer: React.FC = () => {
         const orbitPositions = activeEphemeris.map(state => 
           cartesianFromGeodetic(state.latitude_deg, state.longitude_deg, state.altitude_km)
         );
+
         viewer.entities.add({
           id: orbitId,
           polyline: {
@@ -204,6 +229,7 @@ export const CesiumViewer: React.FC = () => {
         const trackPositions = activeEphemeris.map(state => 
           groundTrackCartesian(state.latitude_deg, state.longitude_deg, 2000)
         );
+
         viewer.entities.add({
           id: trackId,
           polyline: {
@@ -246,6 +272,20 @@ export const CesiumViewer: React.FC = () => {
         state = activeState;
       }
 
+      let isConjunctionTarget = false;
+      let isPrimary = false;
+      let isSecondary = false;
+
+      if (activeConjunctionResult) {
+        if (noradId === activeConjunctionResult.primary_norad_id) {
+          isConjunctionTarget = true;
+          isPrimary = true;
+        } else if (noradId === activeConjunctionResult.secondary_norad_id) {
+          isConjunctionTarget = true;
+          isSecondary = true;
+        }
+      }
+
       if (state) {
         const pos = cartesianFromGeodetic(
           state.latitude_deg,
@@ -256,12 +296,17 @@ export const CesiumViewer: React.FC = () => {
         if (existing) {
           existing.position = pos as any;
           if (existing.label) {
-            existing.label.text = (isActive ? `${obj.name} (NORAD: ${obj.norad_id})` : obj.name) as any;
+            existing.label.text = (isActive ? `${obj.name} (NORAD: ${obj.norad_id})` : isConjunctionTarget ? `[CONJ] ${obj.name}` : obj.name) as any;
             existing.label.font = (isActive ? '12px Share Tech Mono, sans-serif' : '9px Share Tech Mono, sans-serif') as any;
+            if (isConjunctionTarget && !isActive) {
+               existing.label.fillColor = isPrimary ? Color.CYAN : Color.MAGENTA as any;
+            } else {
+               existing.label.fillColor = Color.WHITE as any;
+            }
           }
           if (existing.point) {
-            existing.point.color = (isActive ? Color.RED : Color.ORANGE) as any;
-            existing.point.pixelSize = (isActive ? 12 : 8) as any;
+            existing.point.color = (isActive ? Color.RED : isPrimary ? Color.CYAN : isSecondary ? Color.MAGENTA : Color.ORANGE) as any;
+            existing.point.pixelSize = (isActive ? 12 : isConjunctionTarget ? 10 : 8) as any;
             existing.point.outlineWidth = (isActive ? 2 : 1.0) as any;
           }
         } else {
@@ -270,15 +315,15 @@ export const CesiumViewer: React.FC = () => {
               id: entityId,
               position: pos,
               point: {
-                pixelSize: isActive ? 12 : 8,
-                color: isActive ? Color.RED : Color.ORANGE,
+                pixelSize: isActive ? 12 : isConjunctionTarget ? 10 : 8,
+                color: isActive ? Color.RED : isPrimary ? Color.CYAN : isSecondary ? Color.MAGENTA : Color.ORANGE,
                 outlineColor: Color.WHITE,
                 outlineWidth: isActive ? 2 : 1.0,
               },
               label: {
-                text: isActive ? `${obj.name} (NORAD: ${obj.norad_id})` : obj.name,
+                text: isActive ? `${obj.name} (NORAD: ${obj.norad_id})` : isConjunctionTarget ? `[CONJ] ${obj.name}` : obj.name,
                 font: isActive ? '12px Share Tech Mono, sans-serif' : '9px Share Tech Mono, sans-serif',
-                fillColor: Color.WHITE,
+                fillColor: isConjunctionTarget && !isActive ? (isPrimary ? Color.CYAN : Color.MAGENTA) : Color.WHITE,
                 outlineColor: Color.BLACK,
                 outlineWidth: isActive ? 2.5 : 1.5,
                 style: LabelStyle.FILL_AND_OUTLINE,
@@ -310,7 +355,7 @@ export const CesiumViewer: React.FC = () => {
     }
     toRemove.forEach(ent => viewer.entities.remove(ent));
 
-  }, [selectedObjects, liveObjectStates, liveTrackingEnabled, activeObject, activeState]);
+  }, [selectedObjects, liveObjectStates, liveTrackingEnabled, activeObject, activeState, activeConjunctionResult]);
 
   // --- 5. Camera Fly-To Active Satellite (On Focus Change Only) ---
   useEffect(() => {
@@ -351,6 +396,74 @@ export const CesiumViewer: React.FC = () => {
     }
   };
 
+  // --- 6. Render Catalog Snapshot Layer ---
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    if (!pointsRef.current) {
+      pointsRef.current = viewer.scene.primitives.add(new PointPrimitiveCollection());
+    }
+
+    const points = pointsRef.current!;
+    points.removeAll();
+
+    if (catalogLayerEnabled && catalogLayerObjects && catalogLayerObjects.length > 0) {
+      catalogLayerObjects.forEach(obj => {
+        const pos = Cartesian3.fromDegrees(obj.longitude_deg, obj.latitude_deg, obj.altitude_km * 1000);
+        
+        let color = Color.WHITE;
+        if (obj.object_type === 'PAYLOAD') color = Color.CYAN;
+        else if (obj.object_type === 'ROCKET_BODY') color = Color.ORANGE;
+        else if (obj.object_type === 'DEBRIS') color = Color.MAGENTA;
+
+        points.add({
+          position: pos,
+          color: color,
+          pixelSize: 4,
+          id: `catalog-layer-obj-${obj.norad_id}`
+        });
+      });
+    }
+  }, [catalogLayerEnabled, catalogLayerObjects]);
+
+  // --- 7. Draggable Panel State ---
+  const [panelPos, setPanelPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ mouseX: 0, mouseY: 0, panelX: 0, panelY: 0 });
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - dragStartRef.current.mouseX;
+      const dy = e.clientY - dragStartRef.current.mouseY;
+      setPanelPos({
+        x: dragStartRef.current.panelX + dx,
+        y: dragStartRef.current.panelY + dy
+      });
+    };
+
+    const handleMouseUp = () => setIsDragging(false);
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    dragStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      panelX: panelPos.x,
+      panelY: panelPos.y
+    };
+  };
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
@@ -363,7 +476,7 @@ export const CesiumViewer: React.FC = () => {
         padding: '12px 16px',
         borderRadius: '8px',
         zIndex: 5,
-        width: '220px',
+        minWidth: '220px',
         display: 'flex',
         flexDirection: 'column',
         gap: '10px',
@@ -371,17 +484,24 @@ export const CesiumViewer: React.FC = () => {
         color: 'var(--text-bright)',
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
         border: '1px solid var(--border-color)',
-        pointerEvents: 'auto'
+        pointerEvents: 'auto',
+        transform: `translate(${panelPos.x}px, ${panelPos.y}px)`,
+        resize: 'both',
+        overflow: 'hidden'
       }}>
-        <div style={{ 
-          fontWeight: 600, 
-          borderBottom: '1px solid var(--border-color)', 
-          paddingBottom: '6px', 
-          fontSize: '11px', 
-          textTransform: 'uppercase', 
-          letterSpacing: '0.05em', 
-          color: 'var(--accent-cyan)' 
-        }}>
+        <div 
+          onMouseDown={handleMouseDown}
+          style={{ 
+            fontWeight: 600, 
+            borderBottom: '1px solid var(--border-color)', 
+            paddingBottom: '6px', 
+            fontSize: '11px', 
+            textTransform: 'uppercase', 
+            letterSpacing: '0.05em', 
+            color: 'var(--accent-cyan)',
+            cursor: isDragging ? 'grabbing' : 'grab',
+            userSelect: 'none'
+          }}>
           Globe Layer Controls
         </div>
         
@@ -413,6 +533,26 @@ export const CesiumViewer: React.FC = () => {
             style={{ accentColor: 'var(--accent-cyan)' }}
           />
           Show Observer Station
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '2px' }}>
+          <input 
+            type="checkbox" 
+            checked={enableEarthLighting} 
+            onChange={(e) => setEnableEarthLighting(e.target.checked)}
+            style={{ accentColor: 'var(--accent-orange)' }}
+          />
+          Earth Sun Lighting
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+          <input 
+            type="checkbox" 
+            checked={enableEarthRotation} 
+            onChange={(e) => setEnableEarthRotation(e.target.checked)}
+            style={{ accentColor: 'var(--accent-orange)' }}
+          />
+          Real-Time Earth Rotation
         </label>
 
         <label style={{ 

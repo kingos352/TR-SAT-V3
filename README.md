@@ -241,13 +241,44 @@ The Space-Track API integration is an **optional** feature that allows authentic
 - **Security Warning**: The `.env` file contains sensitive credentials and **must not be committed** to version control. An empty template is provided in `.env.example`.
 - **Disclaimer**: Space-Track provides predictive GP/TLE orbital elements. It is an authenticated catalog source, **NOT** a direct spacecraft telemetry or direct operational command link.
 
-## Roadmap & Deferrals
-The following modules are intentionally excluded from Phase 7 and will be introduced in subsequent phases:
-*   **Phase 8**: Authenticated Space-Track API client integration completed.
-*   **Phase 9**: Multi-stage conjunction screening (close approach detection).
-*   **Phase 10**: Progressive 20,000+ point catalog visualization.
-*   **Phase 11**: Final UI polish & Turkish explanatory documentation.
+## Phase 9: Conjunction Screening MVP
+Phase 9 introduces purely geometric screening (close approach detection) between a primary target and candidate objects within the local catalog.
 
+### Technical Disclaimer
+**This is purely geometric screening and NOT collision probability.** Public TLE/GP elements lack the full covariance matrices required for precise probability of collision (Pc) calculations. This module only evaluates distance vectors (Euclidean distances) based on SGP4 propagated states over a future time window.
 
+### Limitations & Thresholds
+To maintain system performance and prevent excessive computational overhead during SGP4 loop iterations, the following thresholds are strictly enforced:
+*   **Max Screening Horizon**: `7 days` (Requests exceeding this prediction window are rejected)
+*   **Max Candidate Satellites**: `2000` (Conjunction runs exceeding this object limit are rejected)
+*   **Missing TLE Handling**: Any candidate without a valid TLE in the database is automatically safely ignored without crashing the screening job.
 
+### Severity Classification
+Detected approaches are classified by geometric distance thresholds:
+*   `CRITICAL_CANDIDATE`: Distance $< 1.0$ km
+*   `CLOSE`: Distance $< 10.0$ km
+*   `WATCH`: Distance $< 50.0$ km
+*   `INFO`: Distance $\ge 50.0$ km
 
+## Phase 11: System Hardening, QA & Documentation
+Phase 11 focuses on comprehensive quality assurance, elimination of technical debt, system hardening, and professional documentation delivery.
+
+### Deliverables
+*   **Zero-Regression Testing:** Executed full backend physics and API endpoint verification.
+*   **Documentation:** Developed `demo-workflow.md` outlining the standard 10-step operational workflow for demonstrations.
+*   **Turkish Technical Overview:** Provided `technical-overview-tr.md`, an academic-level structural overview of SGP4 propagation, TLE constraints, live tracking vs snapshot modalities, and geometric conjunction limitations.
+*   **Aerospace Nomenclature Polish:** Standardized system terminology to professional orbital mechanics standards across documentation and interfaces.
+
+## Phase 10: All-Catalog Progressive Visualization
+This phase introduces the **All-Catalog Progressive Visualization** feature.
+
+**Emphasize:** This is a **snapshot layer**, NOT high-rate live telemetry. It computes and visualizes the positions of objects at a specific static point in time.
+
+### Specifications & Limits
+- **Maximum Limit:** The endpoint enforces a strict 5000 max limit on the number of objects rendered simultaneously. Requests with a limit > 5000 will be rejected.
+- **Missing Elements:** Any objects with missing TLEs are safely skipped without crashing the snapshot generation.
+- **Color Mapping:** Markers are color-coded based on the object type:
+  - PAYLOAD = cyan
+  - ROCKET_BODY = orange
+  - DEBRIS = magenta
+  - UNKNOWN = white

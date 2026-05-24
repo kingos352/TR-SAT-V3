@@ -80,9 +80,23 @@ export const TelemetryPanel: React.FC = () => {
         minHeight: '200px',
         color: 'var(--text-muted)'
       }}>
-        <span style={{ fontSize: '32px', marginBottom: '12px' }}>🛰️</span>
-        <div style={{ fontSize: '13px', fontWeight: 500 }}>
-          No active object selected. Search the catalog and set an object as active to propagate its coordinates.
+        <div style={{
+          border: '1px dashed rgba(75, 85, 99, 0.5)',
+          borderRadius: '8px',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '8px',
+          backgroundColor: 'rgba(0,0,0,0.2)'
+        }}>
+          <span style={{ fontSize: '32px' }}>🛰️</span>
+          <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-bright)' }}>
+            No Active Object Selected
+          </div>
+          <div style={{ fontSize: '11px', textAlign: 'center', maxWidth: '200px' }}>
+            Search the catalog and set an object as active to propagate its coordinates.
+          </div>
         </div>
       </section>
     );
@@ -243,8 +257,16 @@ export const TelemetryPanel: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ color: 'var(--text-muted)' }}>Reliability:</span>
               <span className="mono-text" style={{
+                backgroundColor: activeState.reliability_status === 'FRESH' ? 'rgba(16, 185, 129, 0.15)' :
+                                 activeState.reliability_status === 'AGING' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                 color: activeState.reliability_status === 'FRESH' ? 'var(--accent-green)' :
                        activeState.reliability_status === 'AGING' ? 'var(--accent-orange)' : 'var(--accent-red)',
+                border: `1px solid ${
+                       activeState.reliability_status === 'FRESH' ? 'var(--accent-green)' :
+                       activeState.reliability_status === 'AGING' ? 'var(--accent-orange)' : 'var(--accent-red)'}`,
+                padding: '2px 6px',
+                borderRadius: '12px',
+                fontSize: '10px',
                 fontWeight: 'bold',
                 textTransform: 'uppercase'
               }}>

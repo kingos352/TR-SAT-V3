@@ -96,6 +96,69 @@ export interface PassWindow {
   range_at_max_km?: number;
 }
 
+export interface ConjunctionScreenRequest {
+  mode: "selected_vs_selected" | "primary_vs_catalog";
+  primary_norad_ids: number[];
+  secondary_norad_ids?: number[];
+  start_time: string;
+  end_time: string;
+  coarse_step_seconds: number;
+  refine_step_seconds: number;
+  max_candidates: number;
+}
+
+export interface ConjunctionResult {
+  primary_norad_id: number;
+  secondary_norad_id: number;
+  tca_time: string;
+  miss_distance_km: number;
+  severity: "CRITICAL_CANDIDATE" | "CLOSE" | "WATCH" | "INFO";
+  primary_position_km: number[];
+  secondary_position_km: number[];
+  primary_velocity_km_per_s?: number[];
+  secondary_velocity_km_per_s?: number[];
+}
+
+export interface ConjunctionScreenResponse {
+  disclaimer: string;
+  mode: string;
+  results: ConjunctionResult[];
+  computation_time_ms: number;
+}
+
+// --- CATALOG VISUALIZATION ---
+
+export interface CatalogSnapshotRequest {
+  timestamp_utc?: string;
+  object_type?: string;
+  category?: string;
+  source?: string;
+  source_group?: string;
+  search?: string;
+  limit: number;
+}
+
+export interface CatalogSnapshotObject {
+  norad_id: number;
+  name: string;
+  object_type: string;
+  category: string;
+  latitude_deg: number;
+  longitude_deg: number;
+  altitude_km: number;
+  x_km: number;
+  y_km: number;
+  z_km: number;
+}
+
+export interface CatalogSnapshotResponse {
+  timestamp_utc: string;
+  returned_count: number;
+  total_matching_count: number;
+  skipped_count: number;
+  objects: CatalogSnapshotObject[];
+}
+
 // --- CLIENT FUNCTIONS ---
 
 /**
@@ -232,5 +295,23 @@ export async function testSpaceTrackAuth(): Promise<SpaceTrackAuthTestResponse> 
 export async function syncSpaceTrackNorad(noradId: number): Promise<CatalogSyncResponse> {
   return apiRequest<CatalogSyncResponse>(`${API_BASE_URL}/api/v1/spacetrack/sync/norad/${noradId}`, {
     method: 'POST',
+  });
+}
+
+// --- CONJUNCTION ---
+
+export async function screenConjunction(payload: ConjunctionScreenRequest): Promise<ConjunctionScreenResponse> {
+  return apiRequest<ConjunctionScreenResponse>(`${API_BASE_URL}/api/v1/conjunction/screen`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getCatalogSnapshot(payload: CatalogSnapshotRequest): Promise<CatalogSnapshotResponse> {
+  return apiRequest<CatalogSnapshotResponse>(`${API_BASE_URL}/api/v1/catalog-visualization/snapshot`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
   });
 }

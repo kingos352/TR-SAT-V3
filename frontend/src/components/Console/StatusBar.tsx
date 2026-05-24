@@ -73,36 +73,33 @@ export const StatusBar: React.FC = () => {
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: '0 20px',
-      height: '60px',
+      height: '50px',
       borderTop: 'none',
       borderLeft: 'none',
       borderRight: 'none',
+      borderBottom: '1px solid var(--border-color)',
+      borderRadius: '0',
       zIndex: 10
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <h1 style={{ 
-          fontSize: '18px', 
+          fontSize: '16px', 
           fontWeight: 700, 
           letterSpacing: '0.05em', 
           textTransform: 'uppercase',
-          background: 'linear-gradient(to right, #00f2fe, #4facfe)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
+          color: 'var(--text-bright)',
           fontFamily: 'var(--font-mono)'
         }}>
-          TR-SAT Mission Control V3
+          TR-SAT Mission Control
         </h1>
         
-        <div className="mono-text" style={{
+        <div style={{
           fontSize: '11px',
-          color: 'var(--accent-cyan)',
-          backgroundColor: 'rgba(6, 182, 212, 0.1)',
-          border: '1px solid rgba(6, 182, 212, 0.3)',
-          padding: '2px 8px',
-          borderRadius: '4px',
-          textTransform: 'uppercase'
+          color: 'var(--text-muted)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
         }}>
-          LOCAL-FIRST CONSOLE
+          Local-first orbital intelligence and mission analysis platform
         </div>
 
         {cesiumTokenMissing && (
@@ -113,8 +110,7 @@ export const StatusBar: React.FC = () => {
             border: '1px solid rgba(249, 115, 22, 0.3)',
             padding: '2px 8px',
             borderRadius: '4px',
-            textTransform: 'uppercase',
-            animation: 'pulse-glow 2s infinite'
+            textTransform: 'uppercase'
           }}>
             🛰️ Fallback Globe (No Ion Token)
           </div>

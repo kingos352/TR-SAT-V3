@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -7,29 +7,30 @@
 
   color-scheme: dark;
   color: #e2e8f0;
-  background-color: #030712;
+  background-color: #050b14; /* Deep space navy */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Design Tokens */
-  --bg-space-dark: #030712;
-  --bg-console-panel: rgba(17, 24, 39, 0.75);
-  --border-color: rgba(75, 85, 99, 0.35);
-  --border-glow: rgba(6, 182, 212, 0.15);
+  /* Aerospace Design Tokens */
+  --bg-space-dark: #050b14; 
+  --bg-console-panel: rgba(11, 25, 44, 0.95); /* Opaque navy panel */
+  --border-color: rgba(43, 76, 126, 0.5); /* Subdued slate/blue border */
   
-  --accent-cyan: #06b6d4;
-  --accent-blue: #3b82f6;
-  --accent-green: #10b981;
-  --accent-orange: #f97316;
-  --accent-red: #ef4444;
+  /* Subdued, Professional Accents */
+  --accent-primary: #3b82f6; /* Blue 500 */
+  --accent-cyan: #0ea5e9; /* Sky 500 */
+  --accent-blue: #2563eb; /* Blue 600 */
+  --accent-green: #10b981; /* Emerald 500 */
+  --accent-orange: #f59e0b; /* Amber 500 */
+  --accent-red: #ef4444; /* Red 500 */
   
-  --text-muted: #94a3b8;
-  --text-bright: #f8fafc;
+  --text-muted: #94a3b8; /* Slate 400 */
+  --text-bright: #f8fafc; /* Slate 50 */
   
-  --font-mono: 'Share Tech Mono', 'Courier New', Courier, monospace;
+  --font-mono: 'JetBrains Mono', 'Courier New', Courier, monospace;
 }
 
 * {
@@ -39,44 +40,48 @@
 }
 
 body, html, #root {
-  width: 100%;
+  width: 100vw;
   height: 100vh;
   overflow: hidden;
   background-color: var(--bg-space-dark);
 }
 
-/* Glassmorphic Panel Styles */
+/* Panel Styles */
 .glass-panel {
   background: var(--bg-console-panel);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-color);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
 }
 
-.glass-panel:hover {
-  border-color: rgba(6, 182, 212, 0.45);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.6), 0 0 15px var(--border-glow);
+.panel-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
 }
 
 /* Scrollbar customization */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(3, 7, 18, 0.5);
+  background: rgba(5, 11, 20, 0.8);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(75, 85, 99, 0.5);
-  border-radius: 3px;
+  background: rgba(43, 76, 126, 0.6);
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-cyan);
+  background: var(--accent-primary);
 }
 
 /* General Layout helpers */
@@ -85,18 +90,11 @@ body, html, #root {
   letter-spacing: 0.05em;
 }
 
-/* Cybernetic Glowing animations */
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.6;
-    box-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
-  }
-  50% {
-    opacity: 1;
-    box-shadow: 0 0 15px rgba(6, 182, 212, 0.6);
-  }
+.text-muted {
+  color: var(--text-muted);
 }
 
+/* Status Indicators */
 .status-indicator {
   width: 8px;
   height: 8px;
@@ -106,17 +104,14 @@ body, html, #root {
 
 .status-ok {
   background-color: var(--accent-green);
-  box-shadow: 0 0 8px var(--accent-green);
 }
 
 .status-warning {
   background-color: var(--accent-orange);
-  animation: pulse-glow 2s infinite;
 }
 
 .status-error {
   background-color: var(--accent-red);
-  box-shadow: 0 0 10px var(--accent-red);
 }
 
 /* Cesium Custom overrides if needed */
@@ -127,3 +122,4 @@ body, html, #root {
   top: 0;
   left: 0;
 }
+

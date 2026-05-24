@@ -29,6 +29,7 @@ export const LiveTrackingPanel: React.FC = () => {
     liveRateHz,
     lastTelemetryFrameUtc,
     liveErrors,
+    liveObjectStates,
     setLiveTrackingEnabled,
     setLiveRateHz
   } = useConsoleStore();
@@ -309,7 +310,7 @@ export const LiveTrackingPanel: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>Object Count in Last Frame:</span>
               <span className="mono-text" style={{ color: 'var(--text-bright)' }}>
-                {useConsoleStore(state => Object.keys(state.liveObjectStates).length)}
+                {Object.keys(liveObjectStates || {}).length}
               </span>
             </div>
             {liveErrors.length > 0 && (
@@ -325,14 +326,17 @@ export const LiveTrackingPanel: React.FC = () => {
       )}
 
       <div style={{ 
-        fontSize: '9px', 
-        color: 'var(--text-muted)', 
-        lineHeight: '1.3', 
-        borderTop: '1px solid var(--border-color)', 
-        paddingTop: '8px',
-        fontStyle: 'italic'
+        backgroundColor: 'rgba(234, 179, 8, 0.1)',
+        border: '1px solid var(--accent-orange)',
+        borderRadius: '6px',
+        padding: '10px 14px',
+        fontSize: '11px',
+        color: 'var(--accent-orange)',
+        fontWeight: 600,
+        lineHeight: '1.4',
+        marginTop: '8px'
       }}>
-        ℹ️ Live tracking is based on latest available TLE/GP elements and UTC-time SGP4 propagation. It is not direct spacecraft telemetry.
+        ⚠️ DISCLAIMER: Live tracking is based on latest available TLE/GP elements and UTC-time SGP4 propagation. It is not direct spacecraft telemetry.
       </div>
     </section>
   );

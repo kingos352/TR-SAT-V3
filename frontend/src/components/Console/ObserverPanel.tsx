@@ -24,6 +24,7 @@ export const ObserverPanel: React.FC = () => {
 
   const [aerLoading, setAerLoading] = useState(false);
   const [passesLoading, setPassesLoading] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const updateObserverSettings = () => {
     const config = {
@@ -103,104 +104,113 @@ export const ObserverPanel: React.FC = () => {
     }}>
       
       {/* 1. Observer Station Configuration */}
-      <div>
-        <h2 style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', marginBottom: '10px' }}>
-          Ground Station Coordinates
-        </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <input
-            type="text"
-            placeholder="Station Name"
-            value={stationName}
-            onChange={(e) => setStationName(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '6px 10px',
-              borderRadius: '4px',
-              backgroundColor: 'rgba(3, 7, 18, 0.7)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-bright)',
-              fontSize: '12px',
-              outline: 'none'
-            }}
-          />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <div>
-              <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Lat (°N)</label>
-              <input
-                type="number"
-                step="0.0001"
-                value={lat}
-                onChange={(e) => setLat(parseFloat(e.target.value) || 0)}
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  borderRadius: '4px',
-                  backgroundColor: 'rgba(3, 7, 18, 0.7)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-bright)',
-                  fontSize: '11px',
-                  outline: 'none'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Lon (°E)</label>
-              <input
-                type="number"
-                step="0.0001"
-                value={lon}
-                onChange={(e) => setLon(parseFloat(e.target.value) || 0)}
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  borderRadius: '4px',
-                  backgroundColor: 'rgba(3, 7, 18, 0.7)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-bright)',
-                  fontSize: '11px',
-                  outline: 'none'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Elev (m)</label>
-              <input
-                type="number"
-                value={elev}
-                onChange={(e) => setElev(parseFloat(e.target.value) || 0)}
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  borderRadius: '4px',
-                  backgroundColor: 'rgba(3, 7, 18, 0.7)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-bright)',
-                  fontSize: '11px',
-                  outline: 'none'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Mask (°)</label>
-              <input
-                type="number"
-                value={minEl}
-                onChange={(e) => setMinEl(parseFloat(e.target.value) || 0)}
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  borderRadius: '4px',
-                  backgroundColor: 'rgba(3, 7, 18, 0.7)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-bright)',
-                  fontSize: '11px',
-                  outline: 'none'
-                }}
-              />
+      <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+        <div 
+          onClick={() => setSettingsOpen(!settingsOpen)}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+        >
+          <h2 style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', margin: 0 }}>
+            Ground Station Coordinates
+          </h2>
+          <span style={{ color: 'var(--text-muted)' }}>{settingsOpen ? '▼' : '▶'}</span>
+        </div>
+        
+        {settingsOpen && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+            <input
+              type="text"
+              placeholder="Station Name"
+              value={stationName}
+              onChange={(e) => setStationName(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '6px 10px',
+                borderRadius: '4px',
+                backgroundColor: 'rgba(3, 7, 18, 0.7)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-bright)',
+                fontSize: '12px',
+                outline: 'none'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div>
+                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Lat (°N)</label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={lat}
+                  onChange={(e) => setLat(parseFloat(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    borderRadius: '4px',
+                    backgroundColor: 'rgba(3, 7, 18, 0.7)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-bright)',
+                    fontSize: '11px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Lon (°E)</label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={lon}
+                  onChange={(e) => setLon(parseFloat(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    borderRadius: '4px',
+                    backgroundColor: 'rgba(3, 7, 18, 0.7)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-bright)',
+                    fontSize: '11px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Elev (m)</label>
+                <input
+                  type="number"
+                  value={elev}
+                  onChange={(e) => setElev(parseFloat(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    borderRadius: '4px',
+                    backgroundColor: 'rgba(3, 7, 18, 0.7)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-bright)',
+                    fontSize: '11px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Mask (°)</label>
+                <input
+                  type="number"
+                  value={minEl}
+                  onChange={(e) => setMinEl(parseFloat(e.target.value) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    borderRadius: '4px',
+                    backgroundColor: 'rgba(3, 7, 18, 0.7)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-bright)',
+                    fontSize: '11px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Action buttons */}

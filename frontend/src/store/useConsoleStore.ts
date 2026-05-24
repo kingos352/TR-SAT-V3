@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { CatalogObject, SatelliteState, ObserverAER, PassWindow } from '../api/client';
+import { CatalogObject, SatelliteState, ObserverAER, PassWindow, ConjunctionResult, CatalogSnapshotObject } from '../api/client';
 
 export interface ObserverConfig {
   name: string;
@@ -27,6 +27,8 @@ export interface ConsoleState {
   showGroundTrack: boolean;
   showObserver: boolean;
   followActiveObject: boolean;
+  enableEarthLighting: boolean;
+  enableEarthRotation: boolean;
   liveTrackingEnabled: boolean;
   liveConnectionStatus: 'DISCONNECTED' | 'CONNECTING' | 'LIVE' | 'PAUSED' | 'ERROR';
   liveRateHz: number;
@@ -34,7 +36,16 @@ export interface ConsoleState {
   lastTelemetryFrameUtc: string | null;
   liveErrors: string[];
   logs: string[];
-  activePanel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources';
+  activePanel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources' | 'conjunction' | 'catalog_layer';
+
+  // Conjunction State
+  conjunctionResults: ConjunctionResult[];
+  activeConjunctionResult: ConjunctionResult | null;
+
+  // Catalog Layer State
+  catalogLayerEnabled: boolean;
+  catalogLayerObjects: CatalogSnapshotObject[];
+  catalogLayerLoading: boolean;
 
   // Actions
   setApiStatus: (status: 'checking' | 'connected' | 'disconnected', error?: string | null) => void;
@@ -53,6 +64,8 @@ export interface ConsoleState {
   setShowGroundTrack: (show: boolean) => void;
   setShowObserver: (show: boolean) => void;
   setFollowActiveObject: (follow: boolean) => void;
+  setEnableEarthLighting: (enable: boolean) => void;
+  setEnableEarthRotation: (enable: boolean) => void;
   setLiveTrackingEnabled: (enabled: boolean) => void;
   setLiveConnectionStatus: (status: 'DISCONNECTED' | 'CONNECTING' | 'LIVE' | 'PAUSED' | 'ERROR') => void;
   setLiveRateHz: (rate: number) => void;
@@ -60,7 +73,13 @@ export interface ConsoleState {
   setLastTelemetryFrameUtc: (timestamp: string | null) => void;
   setLiveErrors: (errors: string[]) => void;
   addLog: (log: string) => void;
-  setActivePanel: (panel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources') => void;
+  setActivePanel: (panel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources' | 'conjunction' | 'catalog_layer') => void;
+  setConjunctionResults: (results: ConjunctionResult[]) => void;
+  setActiveConjunctionResult: (result: ConjunctionResult | null) => void;
+  
+  setCatalogLayerEnabled: (enabled: boolean) => void;
+  setCatalogLayerObjects: (objects: CatalogSnapshotObject[]) => void;
+  setCatalogLayerLoading: (loading: boolean) => void;
 }
 
 export const useConsoleStore = create<ConsoleState>((set) => ({
@@ -87,6 +106,8 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
   showGroundTrack: true,
   showObserver: true,
   followActiveObject: false,
+  enableEarthLighting: false,
+  enableEarthRotation: false,
   liveTrackingEnabled: false,
   liveConnectionStatus: 'DISCONNECTED',
   liveRateHz: 1.0,
@@ -95,6 +116,11 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
   liveErrors: [],
   logs: ['Console Initialized. System standby.'],
   activePanel: 'mission_control',
+  conjunctionResults: [],
+  activeConjunctionResult: null,
+  catalogLayerEnabled: false,
+  catalogLayerObjects: [],
+  catalogLayerLoading: false,
 
   setApiStatus: (status, error = null) => set((state) => ({
     apiStatus: status,
@@ -187,6 +213,16 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
     logs: [...state.logs, `Settings: Camera lock tracking follow-mode ${follow ? 'ENABLED' : 'DISABLED'}.`]
   })),
 
+  setEnableEarthLighting: (enable) => set((state) => ({
+    enableEarthLighting: enable,
+    logs: [...state.logs, `Settings: Earth lighting (sunlight) ${enable ? 'ENABLED' : 'DISABLED'}.`]
+  })),
+
+  setEnableEarthRotation: (enable) => set((state) => ({
+    enableEarthRotation: enable,
+    logs: [...state.logs, `Settings: Real-time Earth rotation ${enable ? 'ENABLED' : 'DISABLED'}.`]
+  })),
+
   setLiveTrackingEnabled: (enabled) => set({ liveTrackingEnabled: enabled }),
 
   setLiveConnectionStatus: (status) => set({ liveConnectionStatus: status }),
@@ -204,5 +240,23 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
   setActivePanel: (panel) => set((state) => ({
     activePanel: panel,
     logs: [...state.logs, `Navigation: Switched active panel workspace to ${panel.toUpperCase().replace('_', ' ')}.`]
-  }))
+  })),
+
+  setConjunctionResults: (results) => set({ conjunctionResults: results }),
+
+  setActiveConjunctionResult: (result) => set((state) => ({
+    activeConjunctionResult: result,
+    logs: result 
+      ? [...state.logs, `System: Highlighted conjunction TCA for Primary NORAD ${result.primary_norad_id} & Secondary NORAD ${result.secondary_norad_id}.`]
+      : state.logs
+  })),
+
+  setCatalogLayerEnabled: (enabled) => set((state) => ({ 
+    catalogLayerEnabled: enabled,
+    logs: [...state.logs, `Catalog Layer visualization ${enabled ? 'ENABLED' : 'DISABLED'}.`]
+  })),
+  
+  setCatalogLayerObjects: (objects) => set({ catalogLayerObjects: objects }),
+  
+  setCatalogLayerLoading: (loading) => set({ catalogLayerLoading: loading })
 }));

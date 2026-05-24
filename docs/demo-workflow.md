@@ -1,33 +1,76 @@
-# TR-SAT V3 - Live Demo Workflow
+# TR-SAT Mission Control V3 - Demo Workflow
 
-This document outlines the standard 10-step operational workflow for demonstrating the capabilities of the TR-SAT Mission Control V3 system.
+This document outlines the standard operational workflow for demonstrating TR-SAT Mission Control V3 during technical presentations or reviews.
 
-## 1. System Initialization & Health Check
-Start the backend (FastAPI) and frontend (Vite/React) servers. Verify system nominal status via the StatusBar, ensuring the API is **ONLINE** and the WebSocket connection is primed.
+## Prerequisites
+Ensure that the `CESIUM_ION_TOKEN` is configured in your `.env` file for 3D globe visualization. Space-Track credentials (`SPACETRACK_USERNAME` / `SPACETRACK_PASSWORD`) are optional but recommended for authenticated source testing.
 
-## 2. Catalog Synchronization (CelesTrak / Space-Track)
-Open the **Catalog Ingestion** panel. Trigger a synchronization for critical groups (e.g., `active`, `stations`, `starlink`, `debris`). The system will parse and ingest the latest GP/TLE (General Perturbation / Two-Line Element) data into the local SQLite database.
+## Step-by-Step Demo Script
 
-## 3. Object Search and Filtering
-Navigate to the **Search** panel. Query the ingested catalog by NORAD ID, Object Name (e.g., `ISS (ZARYA)`), or apply filters based on object type (`PAYLOAD`, `DEBRIS`, etc.) and radar cross-section category.
+### 1. Start the Backend
+Open a terminal, activate the virtual environment, and launch the FastAPI server:
+```bash
+cd backend
+.\.venv\Scripts\Activate.ps1
+py -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
 
-## 4. Target Selection & Focus
-Select a target of interest from the search results to add it to the active tracking list (maximum 20 objects). Click **Focus Target** to center the telemetry panels and predictive analytics around this specific resident space object (RSO).
+### 2. Start the Frontend
+Open a new terminal and launch the Vite development server:
+```bash
+cd frontend
+npm run dev
+```
 
-## 5. Ground Station (Observer) Configuration
-Open the **Observer Panel**. Input the geodetic coordinates (Latitude, Longitude, Altitude) of your local ground station or radar facility (e.g., Nevşehir: `38.6244° N, 34.7144° E, 1200m`).
+### 3. Confirm System Health
+- Open `http://localhost:5173` in your browser.
+- Point to the **Top Status Bar**. It should read **API: ONLINE**. This confirms the frontend is successfully communicating with the local FastAPI backend.
 
-## 6. Live Telemetry Streaming (WebSocket)
-Activate the WebSocket telemetry stream. The system will propagate the selected targets using the SGP4 algorithm in-memory and stream geodetic (Lat/Lon/Alt) and ECEF coordinates to the frontend at 1.0 Hz.
+### 4. Catalog Synchronization
+- Open the **Left Dock** panel.
+- In the **Ingestion** section, select `stations` (or `active`) from the dropdown.
+- Click **Sync Group**.
+- **Explanation**: "The system is currently fetching predictive General Perturbation (GP/TLE) orbital elements from CelesTrak and persisting them to our local SQLite database. This ensures offline-capable, local-first analysis."
 
-## 7. Orbit & Ground Track Visualization
-Observe the 3D CesiumJS globe. Engage the **Orbit Path** and **Ground Track** layers for the active satellite. Enable **Camera Lock Follow** to track the satellite's movement in real-time across the Earth's surface.
+### 5. Search for an Object
+- In the **Search** bar, type `ISS`.
+- Click the search icon.
+- **Explanation**: "The search queries our local resident space object catalog."
 
-## 8. Pass Prediction (Visibility Windows)
-Utilize the **Pass Predictor** feature. Based on the selected ground station, calculate future visibility windows (AOS to LOS). Review the maximum elevation angles and pass durations to plan optical or RF acquisition.
+### 6. Set Active Object
+- From the search results, click the **Target/Crosshair** icon next to `ISS (ZARYA)`.
+- **Explanation**: "This promotes the ISS to the active object within the console, locking our telemetry panels to this specific satellite."
 
-## 9. Conjunction Screening (Close Approaches)
-Initiate a geometric **Conjunction Screening** for the focused satellite against the local catalog. Set a propagation horizon (e.g., 3 days). Review the detected close approaches, categorized by Euclidean distance severity (`CRITICAL`, `CLOSE`, `WATCH`, `INFO`).
+### 7. Update State
+- On the **Right Dock**, locate the **Telemetry Panel**.
+- Click **Update State**.
+- **Explanation**: "We are now utilizing the SGP4 analytical propagator to calculate a TLE-derived state estimate (latitude, longitude, altitude) for the current UTC epoch."
 
-## 10. All-Catalog Snapshot Visualization
-Disable live tracking and trigger the **All-Catalog Progressive Visualization**. The system will render a static snapshot of up to 5000 cataloged objects simultaneously, color-coded by object classification (Payload, Rocket Body, Debris) to visualize current orbital congestion.
+### 8. Update Orbit
+- In the **Telemetry Panel**, click **Update Orbit**.
+- **Explanation**: "This generates a multi-point ephemeris window, projecting the orbit path and ground track on the 3D Cesium globe."
+
+### 9. Start Live Tracking
+- On the **Right Dock**, open the **Live Tracking Panel**.
+- Click **Start Live Tracking**.
+- **Explanation**: "We have now established a WebSocket connection. The backend is running high-frequency in-memory SGP4 physics to stream state updates at 1 Hz. *Note: This is live TLE-based tracking, not direct spacecraft telemetry.*"
+
+### 10. Load Catalog Layer
+- On the **Left Dock**, open the **Catalog Layer** section.
+- Set the limit to `1000` objects and click **Load Snapshot**.
+- **Explanation**: "This triggers an All-Catalog Snapshot. The system is computing the position of 1,000 objects for this exact timestamp. It is highly optimized for situational awareness visualization."
+
+### 11. Run Conjunction Screening
+- On the **Right Dock**, open the **Conjunction Screening** panel.
+- Choose **Primary vs Filtered Catalog** mode, leave filters on `ALL`, and click **Run Screening**.
+- **Explanation**: "The system is performing a geometric close approach screening. It evaluates Euclidean miss-distances between the ISS and thousands of cataloged objects over the next few days. *Note: This does not compute collision probability, as public TLE/GP data lacks covariance matrices.*"
+
+### 12. Export Data
+- On the **Right Dock**, scroll down to the **Data Export System** panel.
+- Click **Ephemeris (CSV)** and **3D Trajectory (CZML)**.
+- **Explanation**: "All exports are processed entirely client-side with zero latency. The data is converted directly from our frontend state into standardized formats."
+
+### 13. Generate Mission Report
+- In the **Data Export System**, click **Rapor (Türkçe)**.
+- Open the downloaded Markdown file.
+- **Explanation**: "This auto-generates a comprehensive mission analysis report, embedding our current propagation states, pass predictions, and conjunction screening results, complete with necessary scientific disclaimers."

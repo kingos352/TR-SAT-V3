@@ -1,284 +1,134 @@
 # TR-SAT Mission Control V3
 
-TR-SAT Mission Control V3 is a local-first orbital intelligence and mission analysis console designed for satellite propagation, pass prediction, and resident space object tracking.
+TR-SAT Mission Control V3 is a local-first orbital intelligence platform designed for satellite propagation, resident space object tracking, and situational awareness visualization. 
 
-## Architecture Summary
-The system is built as a decoupled monorepo containing:
-*   **Backend (Python + FastAPI)**: Exposes REST APIs, handles SGP4 dynamic orbit calculations, and queries the local SQLite database for cached catalog records.
-*   **Frontend (React + TypeScript + Vite)**: Renders a modern aerospace-grade control panel centered around a 3D CesiumJS globe visualizer.
+Powered by TLE/GP-based SGP4 propagation and a CesiumJS 3D mission view, TR-SAT provides a comprehensive desktop console for orbital mechanics analytics without relying on external cloud processing.
 
-## Phase 1 Scope
-Phase 1 establishes the baseline monorepo configuration, environment settings, backend API routing, frontend styling framework, and an empty interactive CesiumJS globe container with a missing-token fallback.
+## 🚀 Key Features
 
-## Setup Instructions
+*   **TLE/GP-Based SGP4 Propagation**: Mathematically propagates satellite positions based on Two-Line Element (TLE) and General Perturbation (GP) sets.
+*   **Live TLE-Based Tracking**: Streams high-frequency (up to 5 Hz) orbital updates to the frontend using in-memory SGP4 physics and WebSocket connections.
+*   **Conjunction Screening MVP**: Geometric close approach screening between primary targets and catalog objects to detect miss-distances.
+*   **All-Catalog Progressive Visualization**: Snapshot visualization capable of rendering thousands of Resident Space Objects (RSOs) simultaneously.
+*   **Client-Side Export System**: Zero-latency exports of Ephemeris (CSV), Trajectories (CZML), Ground Tracks (GeoJSON), and Mission Reports.
+*   **Local-First Architecture**: Powered by a local SQLite persistence layer for TLE ingestion, ensuring fast, offline-capable analysis.
 
-### Environment Variables
+> [!WARNING]
+> **Never commit your `.env` file!** Always use `.env.example` as a template and keep credentials strictly local.
+
+## 🏗️ Architecture & Tech Stack
+
+TR-SAT operates as a decoupled monorepo:
+*   **Backend**: Python, FastAPI, Skyfield (SGP4 Astrodynamics), SQLAlchemy, SQLite.
+*   **Frontend**: TypeScript, React, Vite, Zustand, CesiumJS.
+
+---
+
+## 📷 Screenshots & Media
+
+*Before publishing, please capture and place the following screenshots in the `docs/assets/screenshots/` directory:*
+- [ ] `mission-console.png` - Main console view with active satellite and telemetry panels.
+- [ ] `live-tracking.png` - Live WebSocket telemetry tracking in action.
+- [ ] `catalog-layer.png` - All-Catalog Snapshot rendering thousands of objects.
+- [ ] `conjunction-screening.png` - Geometric miss-distance evaluation results.
+- [ ] `export-system.png` - Client-side export panel.
+
+**How to capture clean screenshots:**
+1. Run backend and frontend servers.
+2. Put your browser in Fullscreen mode (F11).
+3. Sync the `stations` group, search for `ISS`, and set it as active.
+4. Update the orbit to draw the 3D trajectory.
+5. Take `mission-console.png`.
+6. Start Live Tracking and take `live-tracking.png`.
+7. Load the Catalog Layer (limit 1000) and take `catalog-layer.png`.
+8. Run a Conjunction Screening and take `conjunction-screening.png`.
+9. Expand the Export System panel and take `export-system.png`.
+
+---
+
+## ⚙️ Quick Start
+
+### 1. Environment Variables
 Create a `.env` file in the project root containing:
 ```env
 APP_NAME="TR-SAT Mission Control V3"
 APP_ENV=development
 DATABASE_URL=sqlite:///./trsat_v3.sqlite
 CORS_ORIGINS=http://localhost:5173
+
+# Required for 3D Globe Visualization
 CESIUM_ION_TOKEN=
+VITE_CESIUM_ION_TOKEN=
+
+# Space-Track (Optional, Authenticated GP/TLE source)
+# WARNING: Do not commit the actual .env file with your credentials!
 SPACETRACK_USERNAME=
 SPACETRACK_PASSWORD=
-VITE_API_BASE_URL=http://localhost:8000
-VITE_CESIUM_ION_TOKEN=
+
+# Frontend Configuration
+VITE_API_BASE_URL=http://127.0.0.1:8000
+VITE_WS_BASE_URL=ws://127.0.0.1:8000
 ```
 
-### Backend Setup
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Create and activate a Python virtual environment:
-   ```powershell
-   py -3.12 -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   ```
-3. Upgrade pip and install dependencies:
-   ```powershell
-   py -m pip install --upgrade pip
-   py -m pip install -r requirements.txt
-   ```
-4. Run tests to verify the setup:
-   ```powershell
-   py -m pytest -q
-   ```
-5. Launch the backend development server:
-   ```powershell
-   py -m uvicorn app.main:app --reload
-   ```
+### 2. Backend Setup
+```bash
+cd backend
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+py -m pip install -r requirements.txt
+py -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
 
-The backend API will be available at `http://localhost:8000`. The health check is available at `http://localhost:8000/api/v1/health`.
-
-### Frontend Setup
-1. Navigate to the frontend directory:
-   ```bash
-   cd ../frontend
-   ```
-2. Install Node dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the Vite development server:
-   ```bash
-   npm run dev
-   ```
+### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 The frontend interface will be available at `http://localhost:5173`.
 
 ---
 
-## Phase 2: Catalog Ingestion & Local Persistence
-Phase 2 establishes the database schemas, TLE parsing utilities, classification modules, and CelesTrak syncing operations.
+## 🎬 Demo Workflow
 
-### Local SQLite Persistence
-*   **`rso_catalog`**: Stores primary resident space object metadata (Name, NORAD ID, classification type, category, COSPAR ID).
-*   **`tle_records`**: Stores historical and active TLE tracks (Line 1/2, inclination, eccentricity, mean motion, epoch, and drag terms). Indexed on `(norad_id, epoch)` to avoid duplications.
+A typical demonstration workflow follows these steps:
+1. Start backend and frontend servers.
+2. Confirm API is ONLINE via the top Status Bar.
+3. Sync the `stations` catalog group via the Left Dock.
+4. Search for `ISS` in the Catalog Search.
+5. Set the ISS as the active object.
+6. Click **Update State** and **Update Orbit** in the Telemetry Panel.
+7. Start **Live Tracking** to observe the TLE-derived state estimate in real-time.
+8. Load the **Catalog Layer** snapshot to visualize the surrounding space environment.
+9. Run a **Conjunction Screening** to geometrically evaluate miss-distances with nearby objects.
+10. Use the **Data Export System** to download the Ephemeris (CSV), Trajectory (CZML), and the Turkish Mission Report.
 
-### API Endpoints
-*   `POST /api/v1/catalog/sync`: Synchronizes public CelesTrak TLE groups (e.g. `active`, `stations`, `starlink`, `debris`) into local database.
-    *   *Body example*: `{"group": "stations"}`
-*   `GET /api/v1/catalog/groups`: List of supported sync groups.
-*   `GET /api/v1/catalog/search?q={query}`: Searches local database by NORAD ID or name. Filterable by `group`, `object_type`, and `category`.
-*   `GET /api/v1/catalog/{norad_id}`: Retrieves details for a specific catalog object with its latest TLE record.
-
-*Notice: Public catalog synchronization downloads calculated GP/TLE orbital elements. This represents predictive numerical ephemerides and should not be treated as direct operational spacecraft command telemetry.*
-
----
-
-## Phase 3: Physics Engine & SGP4 Propagation Layer
-Phase 3 implements the mathematical foundation for orbital state propagation and ground-based observer calculations.
-
-### Propagation Algorithms
-*   **SGP4 Propagation**: Utilizes the analytical SGP4 propagator (via Skyfield) to compute geocentric position and velocity states at any given UTC epoch.
-*   **WGS84 Geodetic Subpoint**: Calculates latitude, longitude, and elevation relative to the WGS84 Earth reference ellipsoid.
-*   **ECEF Coordinate Approximation**: Converts geodetic positions to Earth-Centered, Earth-Fixed (ECEF) coordinates $(X,Y,Z)$ using a spherical approximation:
-    $$r = R_{earth} + \text{altitude}$$
-    $$X = r \cos(\phi) \cos(\lambda), \quad Y = r \cos(\phi) \sin(\lambda), \quad Z = r \sin(\phi)$$
-    *Notice: This conversion is optimized for 3D globe visualization (Cesium) mapping, not high-precision geodetic analysis.*
-
-### Observer relative geometry (AER)
-*   Computes topocentric ground-station relative parameters:
-    *   **Azimuth ($Az$)**: Horizontal coordinate angle ($0^\circ$ to $360^\circ$).
-    *   **Elevation ($El$)**: Altitude coordinate angle relative to the horizon ($-90^\circ$ to $90^\circ$).
-    *   **Range ($R$)**: Directly computed straight-line Euclidean distance in kilometers.
-
-### TLE Reliability Diagnostics
-*   Tracks TLE age (in days) relative to the propagation UTC epoch.
-*   Categorizes elements based on validity/freshness thresholds:
-    *   `FRESH` ($\le 2$ days old)
-    *   `AGING` ($> 2$ and $\le 14$ days old)
-    *   `STALE` ($> 14$ days old)
+For detailed steps, refer to `docs/demo-workflow.md`.
 
 ---
 
-## Phase 4: FastAPI Physics & Observer Endpoints
-Phase 4 exposes the SGP4 astrodynamics propagator and observer geometry through unified REST API endpoints.
+## 🔬 Scientific Model & Terminology
 
-### API Endpoints
+TR-SAT Mission Control adheres to strict scientific terminology regarding its capabilities.
 
-#### 1. Propagation Services (`/api/v1/propagation`)
-*   `POST /state`: Propagates position using raw TLE lines.
-    *   *Payload*: `PropagationRequest` (name, line1, line2, timestamp_utc)
-*   `POST /ephemeris`: Generates coordinate timeseries using raw TLE lines.
-    *   *Payload*: `EphemerisRequest` (name, line1, line2, start_time_utc, end_time_utc, step_seconds)
-*   `POST /catalog/state`: Propagates position using database-backed TLE based on `norad_id`.
-    *   *Payload*: `CatalogPropagationRequest` (norad_id, timestamp_utc)
-*   `POST /catalog/ephemeris`: Generates coordinate timeseries using database-backed TLE based on `norad_id`.
-    *   *Payload*: `CatalogEphemerisRequest` (norad_id, start_time_utc, end_time_utc, step_seconds)
+*   **SGP4 Propagation**: The system uses the SGP4 analytical propagator to compute geocentric position and velocity states at any given UTC epoch based on public TLE/GP data.
+*   **Geometric Close Approach Screening**: Conjunction screening is purely a geometric miss-distance evaluation between SGP4 propagated states.
 
-#### 2. Observer & Tracking Services (`/api/v1/observer`)
-*   `POST /aer`: Computes topocentric ground-station relative AER (Azimuth, Elevation, Range) coordinates using raw TLE.
-    *   *Payload*: `ObserverAERRequest` (line1, line2, timestamp_utc, observer_latitude_deg, observer_longitude_deg, observer_elevation_m)
-*   `POST /catalog/aer`: Computes observer AER coordinates using database-backed TLE based on `norad_id`.
-    *   *Payload*: `CatalogObserverAERRequest` (norad_id, timestamp_utc, observer_latitude_deg, observer_longitude_deg, observer_elevation_m)
-*   `POST /passes`: Predicts ground-station visibility pass windows using raw TLE.
-    *   *Payload*: `PassPredictionRequest` (line1, line2, observer_latitude_deg, observer_longitude_deg, start_time_utc, end_time_utc, min_elevation_deg)
-*   `POST /catalog/passes`: Predicts visibility pass windows using database-backed TLE based on `norad_id`.
-    *   *Payload*: `CatalogPassPredictionRequest` (norad_id, observer_latitude_deg, observer_longitude_deg, start_time_utc, end_time_utc, min_elevation_deg)
-
-*Notice: Pass predictions use Skyfield's analytical event finding methods. The elevation threshold (Elevation Mask, default $10^\circ$) filters out low-altitude horizon blockages. Real-time satellite tracking uses mathematical SGP4 propagation from historical elements; it is not a direct downlink connection to the spacecraft.*
+### ⚠️ Limitations
+*   **Not Direct Telemetry**: Live tracking is based on the latest available TLE/GP elements and UTC-time SGP4 propagation. It is *not* direct spacecraft telemetry or radar tracking.
+*   **Not Collision Probability**: The system does *not* compute probability of collision (Pc). Public TLE/GP data does not include the covariance matrices required for precise collision probability.
+*   **Not Certified Ephemeris**: CZML exports and ephemeris outputs are intended for visualization and situational awareness, not as certified operational ephemeris for mission command.
 
 ---
 
-## Phase 5: Frontend API Integration & Mission Console Panels
-Phase 5 connects the React/TypeScript frontend to the FastAPI backend, implementing core control panels and aerospace dark themes.
+## 🗺️ Roadmap
+- Future integration of covariance matrices for Pc calculation.
+- Dockerization and cloud deployment manifests.
+- Support for OPM/OEM ephemeris standard formats.
 
-### Frontend Integration Summary
-*   **Fully-Typed API Client (`src/api/client.ts`)**: Integrates endpoints for health checking (`getHealth`), catalog group syncing (`syncCatalogGroup`), RSO search (`searchCatalog`), propagation state calculation (`getCatalogState`), observer AER retrieval (`getCatalogAER`), and ground pass predicting (`getCatalogPasses`).
-*   **State Management (`src/store/useConsoleStore.ts`)**: Implements Zustand state store keeping track of selected objects (max 20), active target, observer configurations, API statuses, and interactive logs.
-*   **Console UI Panels**:
-    *   **StatusBar (`src/components/Console/StatusBar.tsx`)**: Displays API connectivity (ONLINE/OFFLINE), dynamic UTC clocks, tracked objects, focused target details, and active ground station.
-    *   **SidePanel (`src/components/Console/SidePanel.tsx`)**: Controls CelesTrak catalog synchronization, RSO queries, search result lists, focus/selection options, and real-time event logs. Displays a warning banner if selection sets exceed 20 objects.
-    *   **TelemetryPanel (`src/components/Console/TelemetryPanel.tsx`)**: Focuses on active target geodetic latitude/longitude, altitude, ECEF coordinates, and reliability status (Fresh, Aging, Stale) with update triggers.
-    *   **ObserverPanel (`src/components/Console/ObserverPanel.tsx`)**: Customizes ground observers (default Nevşehir: `38.6244° N, 34.7144° E, 1200m`) and triggers topocentric AER/Pass prediction computations for the active target.
+## 📄 License
+To be selected before public release. This project is currently for academic and personal portfolio demonstration.
 
----
-
-## Phase 6: Cesium Selected Object Visualization
-Phase 6 implements the rendering of the active selected satellite, its 3D orbit trajectory, its ground track polyline, and the ground observer station on the 3D CesiumJS globe.
-
-### Coordinate Conversion Strategy
-- **Geodetic (Primary)**: Standard geodetic coordinates (`latitude_deg`, `longitude_deg`, `altitude_km`) are mapped to Cesium's WGS84 ellipsoid surface positions via:
-  `Cesium.Cartesian3.fromDegrees(lon, lat, alt_km * 1000)`
-- **ECEF Cartesian (Secondary)**: Earth-Centered, Earth-Fixed kilometer points are converted to meters in a `Cartesian3` instance for alternative spatial computations.
-- **Ground Track**: Extrapolates geodetic coordinates to altitude = `0` (or `2000m` offset offset for rendering separation) to project the orbit on the globe's surface.
-
-### Visualization Features
-- **Active Satellite Marker**: Renders a large `Color.RED` circular point marker highlighted by a white outer outline, labeled with the satellite name and NORAD catalog ID.
-- **3D Orbit Path**: Draws a cyan/electric blue polyline connecting the points computed over a 90-minute ephemeris window, utilizing `ArcType.NONE` to draw straight lines in space.
-- **Ground Track**: Draws an orange/amber polyline clamped near the surface utilizing `ArcType.GEODESIC` to trace the satellite's ground footprint.
-- **Observer Ground Station**: Places a `Color.BLUE` marker with a text label at the observer ground station's location.
-- **Floating Controls Overlay**: A compact glassmorphic dashboard panel rendered in the top-right of the Cesium container that manages:
-  - Toggling visibility for the Orbit Path, Ground Track, and Observer Station.
-  - Enabling/disabling camera lock-follow mode.
-  - Manual camera fly-to/centering on the active satellite.
-- **Entity Cleanup**: Uses stable entity IDs (`active-satellite`, `active-orbit-path`, `active-ground-track`, `active-observer-station`) to safely update entities without duplicating lines or wiping background base layers.
-
----
-
-## Phase 7: Live Tracking with WebSocket Telemetry Streaming
-Phase 7 implements live TLE-based tracking by establishing a high-frequency WebSocket connection from React to FastAPI.
-
-### WebSocket Protocol Schema
-- **Endpoint**: `/api/v1/ws/telemetry`
-- **Actions**:
-  - `subscribe`: Starts streaming updates for up to 20 NORAD IDs at a configurable rate (default `1.0` Hz, limits: `0.2` Hz to `5.0` Hz).
-  - `update`: Alters active tracking target lists or rates.
-  - `pause`: Temporarily halts telemetry frame updates.
-  - `resume`: Continues streaming frame updates.
-  - `stop`: Halts transmission and purges target caches.
-- **Frames**:
-  - `status`: Declares connection states (`connected`, `paused`, `resumed`, `stopped`).
-  - `telemetry_frame`: Delivers geodetic coordinates, ellipsoidal altitude, ECEF values, and TLE age/freshness diagnostics for active targets.
-  - `error`: Reports missing TLEs or payload violations.
-
-### Optimization & Performance
-- **Caching**: TLE lines for selected satellites are queried and cached in-memory during WebSocket subscription setup.
-- **In-Memory SGP4 Math**: The WebSocket session runs SGP4 orbital propagation purely in memory during tick intervals. It does not query the database during high-frequency streaming frames, preventing SQLite thread blocks.
-- **Cesium Entity Updates**: Markers on the globe (`live-object-${norad_id}` and `active-satellite`) are mutated in place (`entity.position = ...`) rather than deleted and recreated, preventing camera jitter and glitches during follow locks.
-
----
-
-## Live TLE-Based Tracking Troubleshooting
-
-Live tracking means: latest available TLE/GP elements + current UTC time + SGP4 propagation.
-**WARNING:** This is not direct spacecraft telemetry. It does not represent direct radar tracking, command telemetry, or collision probability.
-
-**Configuration Details:**
-- WebSocket endpoint: `/api/v1/ws/telemetry`
-- Frontend env variables:
-  ```env
-  VITE_WS_BASE_URL=ws://127.0.0.1:8000
-  VITE_API_BASE_URL=http://127.0.0.1:8000
-  ```
-- Default rate: 1 Hz (Rate limits: 0.2–5 Hz)
-- Max selected objects: 20
-
-If you encounter issues with the live WebSocket telemetry tracking, check the following troubleshooting guidelines:
-
-### 1. Connection Failure (ERROR State)
-*   **Verification**: Ensure the backend FastAPI server is running on `127.0.0.1:8000`. The frontend uses this host for local tracking fallbacks.
-*   **Browser DevTools**: Open Network → WS. You should see an expected status of `101 Switching Protocols`.
-*   **HTTP 404 Error**: If you see HTTP GET 404 on `/api/v1/ws/telemetry`, the frontend is incorrectly calling the WebSocket endpoint as HTTP instead of native WebSocket. Ensure `new WebSocket(...)` is used, not `fetch(...)` or HTTP clients.
-
-### 2. Missing Satellite Positions or Error Frames
-*   **Cause**: The local SQLite database might not contain TLE elements for the requested satellite.
-*   **Fix**: Go to the **Catalog Ingestion** panel on the left sidebar and trigger a sync for the corresponding group.
-
-### 3. Jittery or Resetting Cesium Camera
-*   **Cause**: Camera snapping can happen if the tracked entity is re-assigned on every tick.
-*   **Resolution**: The camera should not reset during live tracking. Ensure "Camera Lock Follow" is handled cleanly in a separate effect.
-
----
-
-## Space-Track Integration
-The Space-Track API integration is an **optional** feature that allows authenticated fetching of catalog General Perturbation (GP/TLE) data.
-- **Default Behavior**: CelesTrak remains the default, unauthenticated source for catalog synchronizations.
-- **Setup**: To enable Space-Track, you must provide your credentials in the `.env` file using the `SPACETRACK_USERNAME` and `SPACETRACK_PASSWORD` variables.
-- **Security Warning**: The `.env` file contains sensitive credentials and **must not be committed** to version control. An empty template is provided in `.env.example`.
-- **Disclaimer**: Space-Track provides predictive GP/TLE orbital elements. It is an authenticated catalog source, **NOT** a direct spacecraft telemetry or direct operational command link.
-
-## Phase 9: Conjunction Screening MVP
-Phase 9 introduces purely geometric screening (close approach detection) between a primary target and candidate objects within the local catalog.
-
-### Technical Disclaimer
-**This is purely geometric screening and NOT collision probability.** Public TLE/GP elements lack the full covariance matrices required for precise probability of collision (Pc) calculations. This module only evaluates distance vectors (Euclidean distances) based on SGP4 propagated states over a future time window.
-
-### Limitations & Thresholds
-To maintain system performance and prevent excessive computational overhead during SGP4 loop iterations, the following thresholds are strictly enforced:
-*   **Max Screening Horizon**: `7 days` (Requests exceeding this prediction window are rejected)
-*   **Max Candidate Satellites**: `2000` (Conjunction runs exceeding this object limit are rejected)
-*   **Missing TLE Handling**: Any candidate without a valid TLE in the database is automatically safely ignored without crashing the screening job.
-
-### Severity Classification
-Detected approaches are classified by geometric distance thresholds:
-*   `CRITICAL_CANDIDATE`: Distance $< 1.0$ km
-*   `CLOSE`: Distance $< 10.0$ km
-*   `WATCH`: Distance $< 50.0$ km
-*   `INFO`: Distance $\ge 50.0$ km
-
-## Phase 11: System Hardening, QA & Documentation
-Phase 11 focuses on comprehensive quality assurance, elimination of technical debt, system hardening, and professional documentation delivery.
-
-### Deliverables
-*   **Zero-Regression Testing:** Executed full backend physics and API endpoint verification.
-*   **Documentation:** Developed `demo-workflow.md` outlining the standard 10-step operational workflow for demonstrations.
-*   **Turkish Technical Overview:** Provided `technical-overview-tr.md`, an academic-level structural overview of SGP4 propagation, TLE constraints, live tracking vs snapshot modalities, and geometric conjunction limitations.
-*   **Aerospace Nomenclature Polish:** Standardized system terminology to professional orbital mechanics standards across documentation and interfaces.
-
-## Phase 10: All-Catalog Progressive Visualization
-This phase introduces the **All-Catalog Progressive Visualization** feature.
-
-**Emphasize:** This is a **snapshot layer**, NOT high-rate live telemetry. It computes and visualizes the positions of objects at a specific static point in time.
-
-### Specifications & Limits
-- **Maximum Limit:** The endpoint enforces a strict 5000 max limit on the number of objects rendered simultaneously. Requests with a limit > 5000 will be rejected.
-- **Missing Elements:** Any objects with missing TLEs are safely skipped without crashing the snapshot generation.
-- **Color Mapping:** Markers are color-coded based on the object type:
-  - PAYLOAD = cyan
-  - ROCKET_BODY = orange
-  - DEBRIS = magenta
-  - UNKNOWN = white
+## 🙏 Acknowledgements
+Built utilizing [Skyfield](https://rhodesmill.org/skyfield/) for astrodynamics, [CesiumJS](https://cesium.com/) for 3D rendering, and data from [CelesTrak](https://celestrak.org/) and [Space-Track](https://www.space-track.org/).

@@ -6,19 +6,16 @@ import 'cesium/Source/Widgets/widgets.css';
 export const CesiumViewer: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
-  const setCesiumTokenMissing = useConsoleStore((state) => state.setCesiumTokenMissing);
-  const addSystemLog = useConsoleStore((state) => state.addSystemLog);
+  const addLog = useConsoleStore((state) => state.addLog);
 
   useEffect(() => {
     const token = import.meta.env.VITE_CESIUM_ION_TOKEN || '';
     
     if (token && token.trim().length > 0) {
       Ion.defaultAccessToken = token;
-      setCesiumTokenMissing(false);
-      addSystemLog('System: Cesium Ion credentials applied successfully.');
+      addLog('System: Cesium Ion credentials applied successfully.');
     } else {
-      setCesiumTokenMissing(true);
-      addSystemLog('Warning: Cesium Ion token missing. Initializing fallback globe view.');
+      addLog('Warning: Cesium Ion token missing. Initializing fallback globe view.');
     }
 
     if (containerRef.current && !viewerRef.current) {
@@ -39,10 +36,10 @@ export const CesiumViewer: React.FC = () => {
         // Optimize baseline rendering
         viewer.scene.globe.enableLighting = false;
         viewerRef.current = viewer;
-        addSystemLog('System: 3D Visualization engine mounted.');
+        addLog('System: 3D Visualization engine mounted.');
       } catch (err) {
         console.error('Failed to initialize Cesium Viewer:', err);
-        addSystemLog('CRITICAL: Failed to mount 3D Visualization engine.');
+        addLog('CRITICAL: Failed to mount 3D Visualization engine.');
       }
     }
 
@@ -56,7 +53,7 @@ export const CesiumViewer: React.FC = () => {
         viewerRef.current = null;
       }
     };
-  }, [setCesiumTokenMissing, addSystemLog]);
+  }, [addLog]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>

@@ -4,16 +4,23 @@ import { getHealth } from '../../api/client';
 
 export const StatusBar: React.FC = () => {
   const [utcTime, setUtcTime] = useState<string>('');
-  const { backendStatus, setBackendStatus, addSystemLog, cesiumTokenMissing } = useConsoleStore();
+  const { 
+    apiStatus, 
+    setApiStatus, 
+    selectedObjects, 
+    activeObject, 
+    observer, 
+    addLog
+  } = useConsoleStore();
 
-  // Dynamic UTC Clock
+  const [cesiumTokenMissing, setCesiumTokenMissing] = useState(false);
+
+  // Dynamic ticking UTC Clock
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const isoStr = now.toISOString(); // format: YYYY-MM-DDTHH:mm:ss.sssZ
-      setUtcTime(isoStr.replace('T', ' ').substring(0, 19) + ' UTC');
+      setUtcTime(now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC');
     };
-    
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
@@ -26,16 +33,16 @@ export const StatusBar: React.FC = () => {
       try {
         await getHealth();
         if (active) {
-          if (backendStatus !== 'connected') {
-            setBackendStatus('connected');
-            addSystemLog('System: Backend API connected successfully.');
+          if (apiStatus !== 'connected') {
+            setApiStatus('connected');
+            addLog('System: Backend API connected successfully.');
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         if (active) {
-          if (backendStatus !== 'disconnected') {
-            setBackendStatus('disconnected');
-            addSystemLog('CRITICAL: Backend API disconnected. Retrying connection...');
+          if (apiStatus !== 'disconnected') {
+            setApiStatus('disconnected', err.message);
+            addLog(`CRITICAL: Backend API disconnected. Retrying... (${err.message})`);
           }
         }
       }
@@ -47,7 +54,13 @@ export const StatusBar: React.FC = () => {
       active = false;
       clearInterval(interval);
     };
-  }, [backendStatus, setBackendStatus, addSystemLog]);
+  }, [apiStatus, setApiStatus, addLog]);
+
+  // Check if cesium token exists in environmental variables
+  useEffect(() => {
+    const token = import.meta.env.VITE_CESIUM_ION_TOKEN || '';
+    setCesiumTokenMissing(!token || token.trim().length === 0);
+  }, []);
 
   return (
     <header className="glass-panel" style={{
@@ -55,7 +68,7 @@ export const StatusBar: React.FC = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 24px',
+      padding: '0 20px',
       height: '60px',
       borderTop: 'none',
       borderLeft: 'none',
@@ -76,6 +89,18 @@ export const StatusBar: React.FC = () => {
           TR-SAT Mission Control V3
         </h1>
         
+        <div className="mono-text" style={{
+          fontSize: '11px',
+          color: 'var(--accent-cyan)',
+          backgroundColor: 'rgba(6, 182, 212, 0.1)',
+          border: '1px solid rgba(6, 182, 212, 0.3)',
+          padding: '2px 8px',
+          borderRadius: '4px',
+          textTransform: 'uppercase'
+        }}>
+          LOCAL-FIRST CONSOLE
+        </div>
+
         {cesiumTokenMissing && (
           <div className="mono-text" style={{
             fontSize: '11px',
@@ -92,25 +117,56 @@ export const StatusBar: React.FC = () => {
         )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '24px', fontSize: '14px' }}>
-        {/* UTC Clock */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '24px', fontSize: '13px' }}>
+        {/* Dynamic UTC clock */}
         <div className="mono-text" style={{ color: 'var(--text-bright)', letterSpacing: '0.1em' }}>
           {utcTime}
         </div>
 
-        {/* API connection status */}
+        {/* Selected satellites count */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)' }}>Selected:</span>
+          <span className="mono-text" style={{ 
+            color: selectedObjects.length > 0 ? 'var(--accent-cyan)' : 'var(--text-muted)',
+            fontWeight: 600
+          }}>
+            {selectedObjects.length}/20
+          </span>
+        </div>
+
+        {/* Active tracking satellite */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)' }}>Active:</span>
+          <span className="mono-text" style={{ 
+            color: activeObject ? 'var(--accent-green)' : 'var(--accent-red)',
+            fontWeight: 600
+          }}>
+            {activeObject ? `${activeObject.name} (${activeObject.norad_id})` : 'NONE'}
+          </span>
+        </div>
+
+        {/* Observer Name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)' }}>Station:</span>
+          <span className="mono-text" style={{ color: 'var(--text-bright)' }}>
+            {observer.name}
+          </span>
+        </div>
+
+        {/* Connection status badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span className={`status-indicator ${
-            backendStatus === 'connected' ? 'status-ok' : 
-            backendStatus === 'checking' ? 'status-warning' : 'status-error'
+            apiStatus === 'connected' ? 'status-ok' : 
+            apiStatus === 'checking' ? 'status-warning' : 'status-error'
           }`} />
           <span className="mono-text" style={{ 
-            fontSize: '12px', 
+            fontSize: '11px', 
             textTransform: 'uppercase',
-            color: backendStatus === 'connected' ? 'var(--accent-green)' : 
-                   backendStatus === 'checking' ? 'var(--accent-orange)' : 'var(--accent-red)'
+            color: apiStatus === 'connected' ? 'var(--accent-green)' : 
+                   apiStatus === 'checking' ? 'var(--accent-orange)' : 'var(--accent-red)',
+            fontWeight: 600
           }}>
-            API: {backendStatus}
+            {apiStatus === 'connected' ? 'ONLINE' : apiStatus === 'checking' ? 'CHECKING' : 'OFFLINE'}
           </span>
         </div>
       </div>

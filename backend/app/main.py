@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api.router import api_router
+from app.database import engine, Base
+import app.models  # Ensure models are imported for metadata registration
+
+# Create SQLite database tables if not existing
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.APP_NAME,

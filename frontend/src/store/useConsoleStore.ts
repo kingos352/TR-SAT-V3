@@ -1,69 +1,140 @@
 import { create } from 'zustand';
+import { CatalogObject, SatelliteState, ObserverAER, PassWindow } from '../api/client';
 
 export interface ObserverConfig {
   name: string;
-  latitude: number;
-  longitude: number;
-  elevation: number;
+  latitude_deg: number;
+  longitude_deg: number;
+  elevation_m: number;
+  min_elevation_deg: number;
 }
 
 export interface ConsoleState {
-  selectedObjects: number[];
-  activeObserver: ObserverConfig;
-  backendStatus: 'connected' | 'disconnected' | 'checking';
+  apiStatus: 'checking' | 'connected' | 'disconnected';
+  lastApiError: string | null;
+  catalogGroup: string;
+  catalogSearchQuery: string;
+  catalogResults: CatalogObject[];
+  selectedObjects: CatalogObject[];
+  activeObject: CatalogObject | null;
+  maxSelectedObjects: number;
+  observer: ObserverConfig;
+  activeState: SatelliteState | null;
+  activeAER: ObserverAER | null;
+  activePasses: PassWindow[];
+  logs: string[];
   activePanel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources';
-  systemLogs: string[];
-  cesiumTokenMissing: boolean;
-  
+
   // Actions
-  toggleSelectedObject: (id: number) => void;
-  setBackendStatus: (status: 'connected' | 'disconnected' | 'checking') => void;
+  setApiStatus: (status: 'checking' | 'connected' | 'disconnected', error?: string | null) => void;
+  setCatalogResults: (results: CatalogObject[]) => void;
+  setCatalogGroup: (group: string) => void;
+  setCatalogSearchQuery: (query: string) => void;
+  selectObject: (obj: CatalogObject) => void;
+  removeSelectedObject: (noradId: number) => void;
+  setActiveObject: (obj: CatalogObject | null) => void;
+  setObserver: (config: ObserverConfig) => void;
+  setActiveState: (state: SatelliteState | null) => void;
+  setActiveAER: (aer: ObserverAER | null) => void;
+  setActivePasses: (passes: PassWindow[]) => void;
+  addLog: (log: string) => void;
   setActivePanel: (panel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources') => void;
-  addSystemLog: (log: string) => void;
-  setCesiumTokenMissing: (missing: boolean) => void;
-  setActiveObserver: (config: ObserverConfig) => void;
 }
 
 export const useConsoleStore = create<ConsoleState>((set) => ({
+  apiStatus: 'checking',
+  lastApiError: null,
+  catalogGroup: 'stations',
+  catalogSearchQuery: '',
+  catalogResults: [],
   selectedObjects: [],
-  activeObserver: {
-    name: 'Ankara Ground Station',
-    latitude: 39.9334,
-    longitude: 32.8597,
-    elevation: 938.0
+  activeObject: null,
+  maxSelectedObjects: 20,
+  observer: {
+    name: 'Nevşehir Ground Station',
+    latitude_deg: 38.6244,
+    longitude_deg: 34.7144,
+    elevation_m: 1200.0,
+    min_elevation_deg: 10.0
   },
-  backendStatus: 'checking',
+  activeState: null,
+  activeAER: null,
+  activePasses: [],
+  logs: ['Console Initialized. System standby.'],
   activePanel: 'mission_control',
-  systemLogs: ['Console Initialized. System standby.'],
-  cesiumTokenMissing: false,
 
-  toggleSelectedObject: (id) => set((state) => {
-    const isSelected = state.selectedObjects.includes(id);
-    if (isSelected) {
-      return { selectedObjects: state.selectedObjects.filter(item => item !== id) };
-    } else {
-      if (state.selectedObjects.length >= 20) {
-        return { 
-          systemLogs: [...state.systemLogs, 'WARNING: Max tracking limit of 20 objects reached.'] 
-        };
-      }
-      return { selectedObjects: [...state.selectedObjects, id] };
-    }
-  }),
-
-  setBackendStatus: (status) => set({ backendStatus: status }),
-  
-  setActivePanel: (panel) => set((state) => ({ 
-    activePanel: panel,
-    systemLogs: [...state.systemLogs, `Navigation: Switched workspace focus to ${panel.toUpperCase().replace('_', ' ')}.`]
+  setApiStatus: (status, error = null) => set((state) => ({
+    apiStatus: status,
+    lastApiError: error,
+    logs: error ? [...state.logs, `API ERROR: ${error}`] : state.logs
   })),
 
-  addSystemLog: (log) => set((state) => ({ systemLogs: [...state.systemLogs, log] })),
+  setCatalogResults: (results) => set({ catalogResults: results }),
   
-  setCesiumTokenMissing: (missing) => set({ cesiumTokenMissing: missing }),
+  setCatalogGroup: (group) => set({ catalogGroup: group }),
   
-  setActiveObserver: (config) => set((state) => ({
-    activeObserver: config,
-    systemLogs: [...state.systemLogs, `Observer updated: ${config.name} (${config.latitude.toFixed(4)}°N, ${config.longitude.toFixed(4)}°E)`]
+  setCatalogSearchQuery: (query) => set({ catalogSearchQuery: query }),
+
+  selectObject: (obj) => set((state) => {
+    const exists = state.selectedObjects.some((item) => item.norad_id === obj.norad_id);
+    if (exists) return {}; // Already selected
+
+    if (state.selectedObjects.length >= state.maxSelectedObjects) {
+      const warningMsg = 'Maximum tracking selection limit is 20 objects.';
+      return {
+        logs: [...state.logs, `WARNING: ${warningMsg}`],
+        lastApiError: warningMsg
+      };
+    }
+
+    return {
+      selectedObjects: [...state.selectedObjects, obj],
+      lastApiError: null,
+      logs: [...state.logs, `Selected: ${obj.name} (NORAD ID: ${obj.norad_id}) added to tracking set.`]
+    };
+  }),
+
+  removeSelectedObject: (noradId) => set((state) => {
+    const filtered = state.selectedObjects.filter((item) => item.norad_id !== noradId);
+    const wasActive = state.activeObject?.norad_id === noradId;
+    
+    return {
+      selectedObjects: filtered,
+      activeObject: wasActive ? null : state.activeObject,
+      activeState: wasActive ? null : state.activeState,
+      activeAER: wasActive ? null : state.activeAER,
+      activePasses: wasActive ? [] : state.activePasses,
+      lastApiError: null,
+      logs: [...state.logs, `Removed NORAD ID: ${noradId} from active selection set.`]
+    };
+  }),
+
+  setActiveObject: (obj) => set((state) => ({
+    activeObject: obj,
+    activeState: null,
+    activeAER: null,
+    activePasses: [],
+    lastApiError: null,
+    logs: obj 
+      ? [...state.logs, `Active target focus set to: ${obj.name} (NORAD: ${obj.norad_id}).`]
+      : [...state.logs, `Active target focus cleared.`]
+  })),
+
+  setObserver: (config) => set((state) => ({
+    observer: config,
+    logs: [...state.logs, `Observer coordinates updated: ${config.name}.`]
+  })),
+
+  setActiveState: (state) => set({ activeState: state }),
+
+  setActiveAER: (aer) => set({ activeAER: aer }),
+
+  setActivePasses: (passes) => set({ activePasses: passes }),
+
+  addLog: (log) => set((state) => ({ logs: [...state.logs, log] })),
+
+  setActivePanel: (panel) => set((state) => ({
+    activePanel: panel,
+    logs: [...state.logs, `Navigation: Switched active panel workspace to ${panel.toUpperCase().replace('_', ' ')}.`]
   }))
 }));

@@ -46,6 +46,7 @@ class CatalogSyncResponse(BaseModel):
     inserted_tles: int
     updated_objects: int
     skipped_count: int
+    warning: Optional[str] = None
 
 class CatalogSearchResponse(BaseModel):
     count: int

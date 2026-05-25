@@ -48,6 +48,7 @@ export interface CatalogSyncResponse {
   inserted_tles: number;
   updated_objects: number;
   skipped_count: number;
+  warning?: string;
 }
 
 export interface SpaceTrackStatusResponse {
@@ -560,11 +561,11 @@ export async function getCatalogAnalyticsSummary(filters?: {
 }
 
 export async function getReliabilitySummary(): Promise<ReliabilitySummary> {
-  return apiRequest<ReliabilitySummary>(`${API_BASE_URL}/api/v1/analytics/reliability/summary`);
+  return apiRequest<ReliabilitySummary>(`${API_BASE_URL}/api/v1/research/reliability-summary`);
 }
 
 export async function getObjectReliability(noradId: number): Promise<ObjectReliabilityDetail> {
-  return apiRequest<ObjectReliabilityDetail>(`${API_BASE_URL}/api/v1/analytics/reliability/${noradId}`);
+  return apiRequest<ObjectReliabilityDetail>(`${API_BASE_URL}/api/v1/research/object-reliability/${noradId}`);
 }
 
 // --- RESEARCH ---

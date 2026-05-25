@@ -3,20 +3,18 @@ import { useConsoleStore } from '../../store/useConsoleStore';
 import { LineChart } from './Charts/LineChart';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export const ResearchModePanel: React.FC = () => {
-  const { 
-    activeObject, 
-    tleHistory, 
-    decayIndicators, 
-    illuminationState, 
-    relativeMotionResult,
-    researchLoading,
-    fetchTLEHistory,
-    fetchDecayIndicators,
-    fetchIllumination,
-    fetchRelativeMotion,
-    activeConjunctionResult
-  } = useConsoleStore();
+const ResearchModePanelInner: React.FC = () => {
+  const activeObject = useConsoleStore(s => s.activeObject);
+  const tleHistory = useConsoleStore(s => s.tleHistory);
+  const decayIndicators = useConsoleStore(s => s.decayIndicators);
+  const illuminationState = useConsoleStore(s => s.illuminationState);
+  const relativeMotionResult = useConsoleStore(s => s.relativeMotionResult);
+  const researchLoading = useConsoleStore(s => s.researchLoading);
+  const fetchTLEHistory = useConsoleStore(s => s.fetchTLEHistory);
+  const fetchDecayIndicators = useConsoleStore(s => s.fetchDecayIndicators);
+  const fetchIllumination = useConsoleStore(s => s.fetchIllumination);
+  const fetchRelativeMotion = useConsoleStore(s => s.fetchRelativeMotion);
+  const activeConjunctionResult = useConsoleStore(s => s.activeConjunctionResult);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -156,3 +154,5 @@ export const ResearchModePanel: React.FC = () => {
     </div>
   );
 };
+
+export const ResearchModePanel = React.memo(ResearchModePanelInner);

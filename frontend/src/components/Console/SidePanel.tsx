@@ -24,19 +24,17 @@ const categoriesList = [
 // Object Type filters
 const typesList = ['ALL', 'PAYLOAD', 'ROCKET_BODY', 'DEBRIS', 'UNKNOWN'];
 
-export const CatalogIntelligence: React.FC = () => {
-  const {
-    catalogResults,
-    setCatalogResults,
-    selectedObjects,
-    selectObject,
-    removeSelectedObject,
-    activeObject,
-    setActiveObject,
-    addLog,
-    setApiStatus,
-    lastApiError
-  } = useConsoleStore();
+const CatalogIntelligenceInner: React.FC = () => {
+  const catalogResults = useConsoleStore(s => s.catalogResults);
+  const setCatalogResults = useConsoleStore(s => s.setCatalogResults);
+  const selectedObjects = useConsoleStore(s => s.selectedObjects);
+  const selectObject = useConsoleStore(s => s.selectObject);
+  const removeSelectedObject = useConsoleStore(s => s.removeSelectedObject);
+  const activeObject = useConsoleStore(s => s.activeObject);
+  const setActiveObject = useConsoleStore(s => s.setActiveObject);
+  const addLog = useConsoleStore(s => s.addLog);
+  const setApiStatus = useConsoleStore(s => s.setApiStatus);
+  const lastApiError = useConsoleStore(s => s.lastApiError);
 
   // Search Form States
   const [searchQuery, setSearchQuery] = React.useState<string>('');
@@ -148,11 +146,11 @@ export const CatalogIntelligence: React.FC = () => {
   );
 };
 
-export const DataSources: React.FC = () => {
-  const {
-    addLog,
-    setApiStatus
-  } = useConsoleStore();
+export const CatalogIntelligence = React.memo(CatalogIntelligenceInner);
+
+const DataSourcesInner: React.FC = () => {
+  const addLog = useConsoleStore(s => s.addLog);
+  const setApiStatus = useConsoleStore(s => s.setApiStatus);
 
   // Sync Form States
   const [syncGroup, setSyncGroup] = React.useState<string>('stations');
@@ -173,7 +171,11 @@ export const DataSources: React.FC = () => {
       const res = await syncCatalogGroup(syncGroup);
       setSyncResult(res);
       setApiStatus('connected');
-      addLog(`Ingestion success: Synchronized '${syncGroup}' group. Fetched: ${res.fetched_count}, Inserted: ${res.inserted_objects} objects.`);
+      if (res.warning) {
+        addLog(`Ingestion warning: ${res.warning}`);
+      } else {
+        addLog(`Ingestion success: Synchronized '${syncGroup}' group. Fetched: ${res.fetched_count}, Inserted: ${res.inserted_objects} objects.`);
+      }
     } catch (err: any) {
       setApiStatus('disconnected', err.message);
       addLog(`Ingestion error: Synchronization failed for '${syncGroup}' (${err.message})`);
@@ -269,8 +271,11 @@ export const DataSources: React.FC = () => {
   );
 };
 
-export const SystemLogs: React.FC = () => {
-  const { logs, cesiumDiagnostics } = useConsoleStore();
+export const DataSources = React.memo(DataSourcesInner);
+
+const SystemLogsInner: React.FC = () => {
+  const logs = useConsoleStore(s => s.logs);
+  const cesiumDiagnostics = useConsoleStore(s => s.cesiumDiagnostics);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -294,3 +299,5 @@ export const SystemLogs: React.FC = () => {
     </div>
   );
 };
+
+export const SystemLogs = React.memo(SystemLogsInner);

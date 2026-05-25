@@ -5,13 +5,11 @@ import { DonutChart } from './Charts/DonutChart';
 import { HistogramChart } from './Charts/HistogramChart';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export const SpaceEnvironmentDashboard: React.FC = () => {
-  const { 
-    catalogAnalyticsSummary, 
-    analyticsLoading, 
-    analyticsError, 
-    fetchCatalogAnalytics 
-  } = useConsoleStore();
+const SpaceEnvironmentDashboardInner: React.FC = () => {
+  const catalogAnalyticsSummary = useConsoleStore(s => s.catalogAnalyticsSummary);
+  const analyticsLoading = useConsoleStore(s => s.analyticsLoading);
+  const analyticsError = useConsoleStore(s => s.analyticsError);
+  const fetchCatalogAnalytics = useConsoleStore(s => s.fetchCatalogAnalytics);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -131,6 +129,8 @@ export const SpaceEnvironmentDashboard: React.FC = () => {
     </div>
   );
 };
+
+export const SpaceEnvironmentDashboard = React.memo(SpaceEnvironmentDashboardInner);
 
 const MetricCard: React.FC<{ label: string; value: string | number; color: string }> = ({ label, value, color }) => (
   <div style={{

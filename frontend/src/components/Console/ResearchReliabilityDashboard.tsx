@@ -4,15 +4,13 @@ import { DonutChart } from './Charts/DonutChart';
 import { HistogramChart } from './Charts/HistogramChart';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export const ResearchReliabilityDashboard: React.FC = () => {
-  const {
-    reliabilitySummary,
-    activeObjectReliability,
-    reliabilityLoading,
-    reliabilityError,
-    fetchReliabilitySummary,
-    activeObject
-  } = useConsoleStore();
+const ResearchReliabilityDashboardInner: React.FC = () => {
+  const reliabilitySummary = useConsoleStore(s => s.reliabilitySummary);
+  const activeObjectReliability = useConsoleStore(s => s.activeObjectReliability);
+  const reliabilityLoading = useConsoleStore(s => s.reliabilityLoading);
+  const reliabilityError = useConsoleStore(s => s.reliabilityError);
+  const fetchReliabilitySummary = useConsoleStore(s => s.fetchReliabilitySummary);
+  const activeObject = useConsoleStore(s => s.activeObject);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -143,6 +141,8 @@ export const ResearchReliabilityDashboard: React.FC = () => {
     </div>
   );
 };
+
+export const ResearchReliabilityDashboard = React.memo(ResearchReliabilityDashboardInner);
 
 const MetricCard: React.FC<{ label: string; value: string | number; color: string }> = ({ label, value, color }) => (
   <div style={{

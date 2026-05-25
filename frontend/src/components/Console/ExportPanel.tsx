@@ -11,16 +11,14 @@ import {
 } from '../../utils/exportSystem';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export const ExportPanel: React.FC = () => {
-  const {
-    activeObject,
-    activeEphemeris,
-    activeState,
-    activePasses,
-    conjunctionResults,
-    catalogLayerObjects,
-    addLog
-  } = useConsoleStore();
+const ExportPanelInner: React.FC = () => {
+  const activeObject = useConsoleStore(s => s.activeObject);
+  const activeEphemeris = useConsoleStore(s => s.activeEphemeris);
+  const activeState = useConsoleStore(s => s.activeState);
+  const activePasses = useConsoleStore(s => s.activePasses);
+  const conjunctionResults = useConsoleStore(s => s.conjunctionResults);
+  const catalogLayerObjects = useConsoleStore(s => s.catalogLayerObjects);
+  const addLog = useConsoleStore(s => s.addLog);
   const { t } = useTranslation();
 
   const handleExportEphemerisCSV = () => {
@@ -251,3 +249,5 @@ export const ExportPanel: React.FC = () => {
       </div>
   );
 };
+
+export const ExportPanel = React.memo(ExportPanelInner);

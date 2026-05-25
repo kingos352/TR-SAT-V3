@@ -2,23 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export const MissionReplayPanel: React.FC = () => {
-  const {
-    activeObject,
-    replayEnabled,
-    replayPlaying,
-    replayEphemeris,
-    replayCurrentUtc,
-    replaySpeed,
-    replayIndex,
-    replayMode,
-    replayError,
-    setReplayPlaying,
-    setReplaySpeed,
-    setReplayIndex,
-    setReplayCurrentUtc,
-    requestReplayEphemeris
-  } = useConsoleStore();
+const MissionReplayPanelInner: React.FC = () => {
+  const activeObject = useConsoleStore(s => s.activeObject);
+  const replayEnabled = useConsoleStore(s => s.replayEnabled);
+  const replayPlaying = useConsoleStore(s => s.replayPlaying);
+  const replayEphemeris = useConsoleStore(s => s.replayEphemeris);
+  const replayCurrentUtc = useConsoleStore(s => s.replayCurrentUtc);
+  const replaySpeed = useConsoleStore(s => s.replaySpeed);
+  const replayIndex = useConsoleStore(s => s.replayIndex);
+  const replayMode = useConsoleStore(s => s.replayMode);
+  const replayError = useConsoleStore(s => s.replayError);
+  const setReplayPlaying = useConsoleStore(s => s.setReplayPlaying);
+  const setReplaySpeed = useConsoleStore(s => s.setReplaySpeed);
+  const setReplayIndex = useConsoleStore(s => s.setReplayIndex);
+  const setReplayCurrentUtc = useConsoleStore(s => s.setReplayCurrentUtc);
+  const requestReplayEphemeris = useConsoleStore(s => s.requestReplayEphemeris);
   const { t } = useTranslation();
 
   const [followReplayObject, setFollowReplayObject] = useState(false);
@@ -230,3 +228,5 @@ export const MissionReplayPanel: React.FC = () => {
     </div>
   );
 };
+
+export const MissionReplayPanel = React.memo(MissionReplayPanelInner);

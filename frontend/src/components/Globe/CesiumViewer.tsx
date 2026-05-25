@@ -16,10 +16,13 @@ import {
   Camera,
   Rectangle,
   createWorldTerrainAsync,
-  HeightReference
+  HeightReference,
+  ArcGisMapServerImageryProvider,
+  ImageryLayer
 } from 'cesium';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { cartesianFromGeodetic, groundTrackCartesian } from '../../utils/cesiumCoordinates';
+import { API_BASE_URL } from '../../api/client';
 import 'cesium/Source/Widgets/widgets.css';
 
 export const CesiumViewer: React.FC = () => {
@@ -27,79 +30,127 @@ export const CesiumViewer: React.FC = () => {
   const viewerRef = useRef<Viewer | null>(null);
   const prevActiveNoradIdRef = useRef<number | null>(null);
 
-  const {
-    activeObject,
-    activeState,
-    activeEphemeris,
-    observer,
-    showOrbitPath,
-    showGroundTrack,
-    showObserver,
-    followActiveObject,
-    addLog,
-    liveObjectStates,
-    liveTrackingEnabled,
-    selectedObjects,
-    activeConjunctionResult,
-    catalogLayerEnabled,
-    catalogLayerObjects,
-    enableEarthLighting,
-    enableEarthRotation,
-    replayEnabled,
-    replayIndex,
-    replayEphemeris,
-    setCesiumDiagnostics
-  } = useConsoleStore();
+  // PERF: Narrow selectors — each subscribes only to its specific state slice,
+  // preventing re-renders when unrelated state (panel visibility, UI settings) changes.
+  const activeObject = useConsoleStore(s => s.activeObject);
+  const activeState = useConsoleStore(s => s.activeState);
+  const activeEphemeris = useConsoleStore(s => s.activeEphemeris);
+  const observer = useConsoleStore(s => s.observer);
+  const showOrbitPath = useConsoleStore(s => s.showOrbitPath);
+  const showGroundTrack = useConsoleStore(s => s.showGroundTrack);
+  const showObserver = useConsoleStore(s => s.showObserver);
+  const followActiveObject = useConsoleStore(s => s.followActiveObject);
+  const addLog = useConsoleStore(s => s.addLog);
+  const liveObjectStates = useConsoleStore(s => s.liveObjectStates);
+  const liveTrackingEnabled = useConsoleStore(s => s.liveTrackingEnabled);
+  const selectedObjects = useConsoleStore(s => s.selectedObjects);
+  const activeConjunctionResult = useConsoleStore(s => s.activeConjunctionResult);
+  const catalogLayerEnabled = useConsoleStore(s => s.catalogLayerEnabled);
+  const catalogLayerObjects = useConsoleStore(s => s.catalogLayerObjects);
+  const enableEarthLighting = useConsoleStore(s => s.enableEarthLighting);
+  const enableEarthRotation = useConsoleStore(s => s.enableEarthRotation);
+  const replayEnabled = useConsoleStore(s => s.replayEnabled);
+  const replayIndex = useConsoleStore(s => s.replayIndex);
+  const replayEphemeris = useConsoleStore(s => s.replayEphemeris);
+  const setCesiumDiagnostics = useConsoleStore(s => s.setCesiumDiagnostics);
 
   const pointsRef = useRef<PointPrimitiveCollection | null>(null);
 
+  // PERF: Refs for ephemeris data used by hover handler — avoids re-registering
+  // the ScreenSpaceEventHandler every time ephemeris arrays change.
+  const activeEphemerisRef = useRef(activeEphemeris);
+  const replayEphemerisRef = useRef(replayEphemeris);
+  const hoverHandlerRef = useRef<ScreenSpaceEventHandler | null>(null);
+
+  // Keep ephemeris refs in sync with latest state
+  useEffect(() => { activeEphemerisRef.current = activeEphemeris; }, [activeEphemeris]);
+  useEffect(() => { replayEphemerisRef.current = replayEphemeris; }, [replayEphemeris]);
+
   // --- 1. Mount Cesium Globe Viewer ---
   useEffect(() => {
-    const token = import.meta.env.VITE_CESIUM_ION_TOKEN || '';
-    
-    if (token && token.trim().length > 0) {
-      Ion.defaultAccessToken = token;
-      addLog('System: Cesium Ion credentials applied successfully.');
-    } else {
-      addLog('Warning: Cesium Ion token missing. Initializing fallback globe view.');
-    }
+    let active = true;
 
-    if (containerRef.current && !viewerRef.current) {
-      if (observer) {
-        Camera.DEFAULT_VIEW_RECTANGLE = Rectangle.fromDegrees(
-          observer.longitude_deg - 15,
-          observer.latitude_deg - 15,
-          observer.longitude_deg + 15,
-          observer.latitude_deg + 15
-        );
+    const initCesium = async () => {
+      let token = import.meta.env.VITE_CESIUM_ION_TOKEN || '';
+      
+      if (!token || token.trim().length === 0) {
+        try {
+          const resp = await fetch(`${API_BASE_URL}/api/v1/config/current`);
+          if (resp.ok) {
+            const data = await resp.json();
+            token = data.cesium_token || '';
+          }
+        } catch (e) {
+          console.error("Failed to fetch cesium token from backend", e);
+        }
       }
 
-      try {
-        const viewer = new Viewer(containerRef.current, {
-          animation: false,
-          timeline: false,
-          baseLayerPicker: false,
-          geocoder: false,
-          homeButton: true,
-          infoBox: false,
-          sceneModePicker: true,
-          selectionIndicator: false,
-          navigationHelpButton: false,
-          fullscreenButton: false,
-          creditContainer: document.createElement('div'),
-        });
+      if (!active) return;
 
-        // Optimize baseline rendering
-        viewer.scene.globe.enableLighting = false;
-        viewer.scene.postProcessStages.fxaa.enabled = true;
-        viewer.resolutionScale = 1.0;
-        
-        viewerRef.current = viewer;
-        addLog('System: 3D Visualization engine mounted.');
+      if (token && token.trim().length > 0) {
+        Ion.defaultAccessToken = token;
+        addLog('System: Cesium Ion credentials applied successfully.');
+      } else {
+        addLog('Warning: Cesium Ion token missing. Initializing fallback globe view.');
+      }
 
-        if (token && token.trim().length > 0) {
-          setCesiumDiagnostics({ token: 'Configured', terrain: 'Checking...', imagery: 'Checking...' });
-          (async () => {
+      if (containerRef.current && !viewerRef.current) {
+        if (observer) {
+          Camera.DEFAULT_VIEW_RECTANGLE = Rectangle.fromDegrees(
+            observer.longitude_deg - 15,
+            observer.latitude_deg - 15,
+            observer.longitude_deg + 15,
+            observer.latitude_deg + 15
+          );
+        }
+
+        try {
+          const useIon = token && token.trim().length > 0;
+          
+          const viewerOptions: any = {
+            animation: false,
+            timeline: false,
+            baseLayerPicker: false,
+            geocoder: false,
+            homeButton: true,
+            infoBox: false,
+            sceneModePicker: true,
+            selectionIndicator: false,
+            navigationHelpButton: false,
+            fullscreenButton: false,
+            creditContainer: document.createElement('div'),
+            contextOptions: {
+              webgl: {
+                antialias: true
+              }
+            }
+          };
+
+          if (!useIon) {
+            viewerOptions.baseLayer = ImageryLayer.fromProviderAsync(
+              ArcGisMapServerImageryProvider.fromUrl('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer', {
+                enablePickFeatures: false
+              })
+            );
+          }
+
+          const viewer = new Viewer(containerRef.current, viewerOptions);
+
+          // Professional high-quality rendering settings
+          viewer.scene.globe.enableLighting = false;
+          viewer.resolutionScale = Math.max(window.devicePixelRatio || 1.0, 2.0); // Force super-sampling for glass-like sharpness
+          viewer.scene.postProcessStages.fxaa.enabled = false; // Disable FXAA to prevent post-process blurring of text/orbit paths
+          if (viewer.scene.msaaSamples !== undefined) {
+            viewer.scene.msaaSamples = 8; // 8x MSAA for ultra-smooth edges
+          }
+          viewer.scene.globe.maximumScreenSpaceError = 1.0; // Sharper terrain and imagery (lower is better, default is 2.0)
+          viewer.scene.highDynamicRange = true; // Realistic aerospace dynamic range
+          
+          viewerRef.current = viewer;
+          addLog('System: 3D Visualization engine mounted.');
+
+          if (token && token.trim().length > 0) {
+            setCesiumDiagnostics({ token: 'Configured', terrain: 'Checking...', imagery: 'Checking...' });
             try {
               if (createWorldTerrainAsync) {
                 viewer.terrainProvider = await createWorldTerrainAsync();
@@ -111,15 +162,18 @@ export const CesiumViewer: React.FC = () => {
               addLog('Warning: Cesium ion imagery/terrain unavailable. Using fallback globe.');
               setCesiumDiagnostics({ token: 'Configured', terrain: 'Failed', imagery: 'Fallback' });
             }
-          })();
+          }
+        } catch (err) {
+          console.error('Failed to initialize Cesium Viewer:', err);
+          addLog('CRITICAL: Failed to mount 3D Visualization engine.');
         }
-      } catch (err) {
-        console.error('Failed to initialize Cesium Viewer:', err);
-        addLog('CRITICAL: Failed to mount 3D Visualization engine.');
       }
-    }
+    };
+
+    initCesium();
 
     return () => {
+      active = false;
       if (viewerRef.current) {
         try {
           viewerRef.current.destroy();
@@ -171,19 +225,21 @@ export const CesiumViewer: React.FC = () => {
               color: Color.BLUE,
               outlineColor: Color.WHITE,
               outlineWidth: 1.5,
-              heightReference: HeightReference.CLAMP_TO_GROUND
+              heightReference: HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY
             },
             label: {
               text: observer.name,
-              font: '24px Share Tech Mono, sans-serif',
-              scale: 0.5,
+              font: '40px Inter, sans-serif',
+              scale: 0.3,
               fillColor: Color.WHITE,
               outlineColor: Color.BLACK,
-              outlineWidth: 2,
+              outlineWidth: 3,
               style: LabelStyle.FILL_AND_OUTLINE,
               verticalOrigin: VerticalOrigin.BOTTOM,
               pixelOffset: new Cartesian2(0, -9),
-              heightReference: HeightReference.CLAMP_TO_GROUND
+              heightReference: HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY
             }
           });
         }
@@ -346,13 +402,15 @@ export const CesiumViewer: React.FC = () => {
           existing.position = pos as any;
           if (existing.label) {
             existing.label.text = (isActive ? `${obj.name} (NORAD: ${obj.norad_id})` : isConjunctionTarget ? `[CONJ] ${obj.name}` : obj.name) as any;
-            existing.label.font = (isActive ? '12px Share Tech Mono, sans-serif' : '9px Share Tech Mono, sans-serif') as any;
+            existing.label.font = (isActive ? '40px "Share Tech Mono", monospace' : '30px "Share Tech Mono", monospace') as any;
+            existing.label.scale = 0.3 as any;
             if (isConjunctionTarget && !isActive) {
                existing.label.fillColor = isPrimary ? Color.CYAN.withAlpha(alpha) : Color.MAGENTA.withAlpha(alpha) as any;
             } else {
                existing.label.fillColor = Color.WHITE.withAlpha(alpha) as any;
             }
             existing.label.outlineColor = Color.BLACK.withAlpha(alpha) as any;
+            existing.label.outlineWidth = (isActive ? 3 : 2) as any;
           }
           if (existing.point) {
             existing.point.color = (isActive ? Color.RED.withAlpha(alpha) : isPrimary ? Color.CYAN.withAlpha(alpha) : isSecondary ? Color.MAGENTA.withAlpha(alpha) : Color.ORANGE.withAlpha(alpha)) as any;
@@ -370,16 +428,19 @@ export const CesiumViewer: React.FC = () => {
                 color: isActive ? Color.RED.withAlpha(alpha) : isPrimary ? Color.CYAN.withAlpha(alpha) : isSecondary ? Color.MAGENTA.withAlpha(alpha) : Color.ORANGE.withAlpha(alpha),
                 outlineColor: Color.WHITE.withAlpha(alpha),
                 outlineWidth: isActive ? 2 : 1.0,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY
               },
               label: {
                 text: isActive ? `${obj.name} (NORAD: ${obj.norad_id})` : isConjunctionTarget ? `[CONJ] ${obj.name}` : obj.name,
-                font: isActive ? '12px Share Tech Mono, sans-serif' : '9px Share Tech Mono, sans-serif',
+                font: isActive ? '40px Inter, sans-serif' : '30px Inter, sans-serif',
+                scale: 0.3,
                 fillColor: isConjunctionTarget && !isActive ? (isPrimary ? Color.CYAN.withAlpha(alpha) : Color.MAGENTA.withAlpha(alpha)) : Color.WHITE.withAlpha(alpha),
                 outlineColor: Color.BLACK.withAlpha(alpha),
-                outlineWidth: isActive ? 2.5 : 1.5,
+                outlineWidth: isActive ? 3.0 : 2.0,
                 style: LabelStyle.FILL_AND_OUTLINE,
                 verticalOrigin: VerticalOrigin.BOTTOM,
-                pixelOffset: isActive ? new Cartesian2(0, -12) : new Cartesian2(0, -8)
+                pixelOffset: isActive ? new Cartesian2(0, -12) : new Cartesian2(0, -8),
+                disableDepthTestDistance: Number.POSITIVE_INFINITY
               }
             });
           } catch (err) {
@@ -442,16 +503,19 @@ export const CesiumViewer: React.FC = () => {
             color: Color.YELLOW,
             outlineColor: Color.BLACK,
             outlineWidth: 2,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
           },
           label: {
             text: `[REPLAY] ${activeObject.name}`,
-            font: '13px Share Tech Mono, sans-serif',
+            font: '44px Inter, sans-serif',
+            scale: 0.3,
             fillColor: Color.YELLOW,
             outlineColor: Color.BLACK,
-            outlineWidth: 3,
+            outlineWidth: 4,
             style: LabelStyle.FILL_AND_OUTLINE,
             verticalOrigin: VerticalOrigin.BOTTOM,
-            pixelOffset: new Cartesian2(0, -15)
+            pixelOffset: new Cartesian2(0, -15),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
           }
         });
       }
@@ -568,22 +632,28 @@ export const CesiumViewer: React.FC = () => {
   }, [catalogLayerEnabled, catalogLayerObjects]);
 
   // --- Hover interaction for Ephemeris Ghost ---
+  // PERF: Register handler ONCE on mount, read ephemeris from refs to avoid
+  // destroying/recreating ScreenSpaceEventHandler on every ephemeris update.
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer) return;
+    // Avoid duplicate registration
+    if (hoverHandlerRef.current) return;
 
     const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
+    hoverHandlerRef.current = handler;
     const ghostId = 'ephemeris-hover-ghost';
 
     handler.setInputAction((movement: any) => {
       const pickedObject = viewer.scene.pick(movement.endPosition);
       if (pickedObject && pickedObject.id && (pickedObject.id.id === 'replay-orbit-path' || pickedObject.id.id === 'active-orbit-path')) {
         
-        const ephemeris = pickedObject.id.id === 'replay-orbit-path' ? replayEphemeris : activeEphemeris;
+        // Read from refs — always up-to-date, no stale closures
+        const ephemeris = pickedObject.id.id === 'replay-orbit-path' ? replayEphemerisRef.current : activeEphemerisRef.current;
         if (!ephemeris || ephemeris.length === 0) return;
 
-        // Find closest point in 2D
-        let minDistance = Infinity;
+        // Find closest point in 2D, using 3D distance to camera to disambiguate crossings and back-of-earth
+        let minCamDist = Infinity;
         let closestState = null;
         let closestPos3D = null;
 
@@ -593,22 +663,29 @@ export const CesiumViewer: React.FC = () => {
           const pos2D = SceneTransforms.worldToWindowCoordinates(viewer.scene, pos3D);
           if (pos2D) {
             const dist = Cartesian2.distance(pos2D, movement.endPosition);
-            if (dist < minDistance) {
-              minDistance = dist;
-              closestState = state;
-              closestPos3D = pos3D;
+            if (dist < 30) {
+              const camDist = Cartesian3.distance(viewer.camera.position, pos3D);
+              if (camDist < minCamDist) {
+                minCamDist = camDist;
+                closestState = state;
+                closestPos3D = pos3D;
+              }
             }
           }
         }
 
-        if (closestState && minDistance < 50) { // threshold
+        if (closestState) {
           const existingGhost = viewer.entities.getById(ghostId);
           const timeStr = new Date(closestState.timestamp_utc).toISOString().substring(11, 19);
           const text = `T: ${timeStr}\nAlt: ${closestState.altitude_km.toFixed(1)} km`;
           
           if (existingGhost) {
             existingGhost.position = closestPos3D as any;
-            if (existingGhost.label) existingGhost.label.text = text as any;
+            if (existingGhost.label) {
+              existingGhost.label.text = text as any;
+              existingGhost.label.font = '40px "Share Tech Mono", monospace' as any;
+              existingGhost.label.scale = 0.3 as any;
+            }
           } else {
             viewer.entities.add({
               id: ghostId,
@@ -618,16 +695,19 @@ export const CesiumViewer: React.FC = () => {
                 color: Color.CYAN,
                 outlineColor: Color.WHITE,
                 outlineWidth: 2,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY
               },
               label: {
                 text: text,
-                font: '11px Share Tech Mono, sans-serif',
-                fillColor: Color.WHITE,
+                font: '40px Inter, sans-serif',
+                scale: 0.3,
+                fillColor: Color.CYAN,
                 outlineColor: Color.BLACK,
-                outlineWidth: 2,
+                outlineWidth: 3,
                 style: LabelStyle.FILL_AND_OUTLINE,
                 verticalOrigin: VerticalOrigin.BOTTOM,
                 pixelOffset: new Cartesian2(0, -10),
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
                 backgroundColor: new Color(0, 0, 0, 0.7),
                 showBackground: true,
               }
@@ -645,13 +725,14 @@ export const CesiumViewer: React.FC = () => {
     }, ScreenSpaceEventType.MOUSE_MOVE);
 
     return () => {
-      if (!handler.isDestroyed()) {
-        handler.destroy();
+      if (hoverHandlerRef.current && !hoverHandlerRef.current.isDestroyed()) {
+        hoverHandlerRef.current.destroy();
       }
+      hoverHandlerRef.current = null;
       const existingGhost = viewerRef.current?.entities.getById(ghostId);
       if (existingGhost && viewerRef.current) viewerRef.current.entities.remove(existingGhost);
     };
-  }, [replayEphemeris, activeEphemeris]);
+  }, []); // PERF: Empty deps — register once, reads from refs
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>

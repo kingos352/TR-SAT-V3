@@ -1,26 +1,24 @@
-from enum import Enum
 from pydantic import BaseModel, Field
-from typing import Dict, Optional
+from typing import List
 
-class ReliabilityLabel(str, Enum):
-    FRESH = "FRESH"
-    GOOD = "GOOD"
-    AGING = "AGING"
-    STALE = "STALE"
-    VERY_STALE = "VERY_STALE"
+class AgeHistogramItem(BaseModel):
+    label: str
+    count: int
 
 class ObjectReliabilityDetail(BaseModel):
-    norad_id: str = Field(..., description="NORAD Catalog Number")
+    norad_id: int = Field(..., description="NORAD Catalog Number")
+    tle_epoch_utc: str = Field(..., description="TLE epoch timestamp")
     tle_age_days: float = Field(..., description="Age of the TLE in days")
-    label: ReliabilityLabel = Field(..., description="Categorical label for TLE reliability")
-    warning: Optional[str] = Field(None, description="Scientific warning for stale TLEs")
+    reliability_label: str = Field(..., description="Categorical label: FRESH, AGING, STALE, UNKNOWN")
+    warnings: List[str] = Field(default_factory=list, description="List of warnings")
 
 class ReliabilitySummary(BaseModel):
+    overall_freshness_score: float = Field(..., description="Freshness index score")
     total_objects: int = Field(..., description="Total number of objects analyzed")
-    freshness_distribution: Dict[ReliabilityLabel, int] = Field(..., description="Count of objects per label")
-    average_tle_age_days: float = Field(..., description="Mean TLE age in days")
-    median_tle_age_days: float = Field(..., description="Median TLE age in days")
-    max_tle_age_days: float = Field(..., description="Maximum TLE age in days")
-    stale_percentage: float = Field(..., description="Percentage of objects that are STALE or VERY_STALE")
-    very_stale_percentage: float = Field(..., description="Percentage of objects that are VERY_STALE")
-    scientific_warning: str = Field(..., description="General warning about covariance and propagation errors")
+    fresh_count: int = Field(..., description="Number of fresh TLEs")
+    aging_count: int = Field(..., description="Number of aging TLEs")
+    stale_count: int = Field(..., description="Number of stale TLEs")
+    unknown_count: int = Field(..., description="Number of unknown TLEs")
+    average_age_days: float = Field(..., description="Mean TLE age in days")
+    median_age_days: float = Field(..., description="Median TLE age in days")
+    age_histogram: List[AgeHistogramItem] = Field(..., description="Histogram distribution data")

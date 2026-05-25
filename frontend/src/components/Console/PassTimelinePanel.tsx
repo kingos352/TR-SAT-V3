@@ -1,18 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { SkyViewChart } from './SkyViewChart';
 import { ElevationProfileChart } from './ElevationProfileChart';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export const PassTimelinePanel: React.FC = () => {
-  const { 
-    activeObject, 
-    detailedPasses, 
-    selectedDetailedPass,
-    isComputingDetailedPasses, 
-    setSelectedDetailedPass,
-    fetchDetailedPasses
-  } = useConsoleStore();
+const PassTimelinePanelInner: React.FC = () => {
+  const activeObject = useConsoleStore(s => s.activeObject);
+  const detailedPasses = useConsoleStore(s => s.detailedPasses);
+  const selectedDetailedPass = useConsoleStore(s => s.selectedDetailedPass);
+  const isComputingDetailedPasses = useConsoleStore(s => s.isComputingDetailedPasses);
+  const setSelectedDetailedPass = useConsoleStore(s => s.setSelectedDetailedPass);
+  const fetchDetailedPasses = useConsoleStore(s => s.fetchDetailedPasses);
   const { t } = useTranslation();
   const [horizonHours, setHorizonHours] = useState(24);
   const [minElev, setMinElev] = useState(10);
@@ -214,79 +213,105 @@ export const PassTimelinePanel: React.FC = () => {
       )}
 
       {/* Selected Pass Details & Charts Modal popup */}
-      {selectedDetailedPass && (
+      {/* Selected Pass Details & Charts Modal popup */}
+      {selectedDetailedPass && createPortal(
         <div style={{
           position: 'fixed',
           top: `${modalPos.y}px`,
           left: `${modalPos.x}px`,
-          width: '740px',
-          height: '460px',
-          background: 'rgba(11, 25, 44, 0.98)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid var(--accent-cyan)',
-          borderRadius: '8px',
-          zIndex: 1000,
-          padding: '16px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 15px rgba(14, 165, 233, 0.2)',
+          width: '800px',
+          height: '500px',
+          background: 'rgba(11, 20, 35, 0.95)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(14, 165, 233, 0.4)',
+          borderRadius: '16px',
+          zIndex: 9999,
+          padding: '24px',
+          boxShadow: '0 30px 60px -12px rgba(0,0,0,1), 0 0 30px rgba(14, 165, 233, 0.15)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '12px'
+          gap: '20px',
+          animation: 'fadeInScale 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
         }}>
+          <style>{`
+            @keyframes fadeInScale {
+              from { opacity: 0; transform: scale(0.95) translateY(10px); }
+              to { opacity: 1; transform: scale(1) translateY(0); }
+            }
+          `}</style>
           <div 
             onMouseDown={handleHeaderMouseDown}
             style={{ 
               display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-              borderBottom: '1px solid var(--border-color)', paddingBottom: '8px',
+              borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '16px',
               cursor: isDragging ? 'grabbing' : 'grab'
             }}
           >
-            <h3 style={{ margin: 0, color: 'var(--text-bright)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              {t('pass_timeline.detailed_profile')} ({new Date(selectedDetailedPass.aos_time_utc).toLocaleDateString()})
+            <h3 style={{ margin: 0, color: 'var(--text-bright)', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 600 }}>
+              {t('pass_timeline.detailed_profile')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({new Date(selectedDetailedPass.aos_time_utc).toLocaleDateString()})</span>
             </h3>
             <button 
               onClick={() => setSelectedDetailedPass(null)} 
-              style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer', fontSize: '16px' }}
+              style={{ 
+                background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: 'none', 
+                cursor: 'pointer', fontSize: '20px', width: '32px', height: '32px', 
+                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                transition: 'all 0.2s ease', outline: 'none', lineHeight: 1
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'var(--text-bright)'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.transform = 'scale(1)'; }}
               title="Close"
             >
-              ✖
+              &times;
             </button>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-around', background: 'rgba(0,0,0,0.2)', padding: '10px', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '11px' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '10px', marginBottom: '2px' }}>{t('pass_timeline.rise_az')}</div>
-              <div className="mono-text" style={{ fontSize: '13px', color: '#4caf50', fontWeight: 'bold' }}>{selectedDetailedPass.azimuth_aos_deg?.toFixed(1)}°</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+            <div style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px 12px', textAlign: 'center', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontWeight: 500 }}>{t('pass_timeline.rise_az')}</div>
+              <div className="mono-text" style={{ fontSize: '18px', color: 'var(--accent-green)', fontWeight: 'bold', textShadow: '0 0 10px rgba(16, 185, 129, 0.4)' }}>{selectedDetailedPass.azimuth_aos_deg?.toFixed(1)}°</div>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '10px', marginBottom: '2px' }}>{t('pass_timeline.max_az')}</div>
-              <div className="mono-text" style={{ fontSize: '13px', color: '#ffeb3b', fontWeight: 'bold' }}>{selectedDetailedPass.azimuth_max_deg?.toFixed(1)}°</div>
+            <div style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px 12px', textAlign: 'center', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontWeight: 500 }}>{t('pass_timeline.max_az')}</div>
+              <div className="mono-text" style={{ fontSize: '18px', color: 'var(--accent-orange)', fontWeight: 'bold', textShadow: '0 0 10px rgba(245, 158, 11, 0.4)' }}>{selectedDetailedPass.azimuth_max_deg?.toFixed(1)}°</div>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '10px', marginBottom: '2px' }}>{t('pass_timeline.set_az')}</div>
-              <div className="mono-text" style={{ fontSize: '13px', color: '#f44336', fontWeight: 'bold' }}>{selectedDetailedPass.azimuth_los_deg?.toFixed(1)}°</div>
+            <div style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px 12px', textAlign: 'center', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontWeight: 500 }}>{t('pass_timeline.set_az')}</div>
+              <div className="mono-text" style={{ fontSize: '18px', color: 'var(--accent-red)', fontWeight: 'bold', textShadow: '0 0 10px rgba(239, 68, 68, 0.4)' }}>{selectedDetailedPass.azimuth_los_deg?.toFixed(1)}°</div>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '10px', marginBottom: '2px' }}>{t('pass_timeline.max_el')}</div>
-              <div className="mono-text" style={{ fontSize: '13px', color: 'var(--accent-cyan)', fontWeight: 'bold' }}>{selectedDetailedPass.max_elevation_deg?.toFixed(1)}°</div>
+            <div style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px 12px', textAlign: 'center', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontWeight: 500 }}>{t('pass_timeline.max_el')}</div>
+              <div className="mono-text" style={{ fontSize: '18px', color: 'var(--accent-cyan)', fontWeight: 'bold', textShadow: '0 0 10px rgba(14, 165, 233, 0.5)' }}>{selectedDetailedPass.max_elevation_deg?.toFixed(1)}°</div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexGrow: 1, alignItems: 'center', marginTop: '10px' }}>
-            <SkyViewChart 
-              profile={selectedDetailedPass.elevation_profile} 
-              maxElevation={selectedDetailedPass.max_elevation_deg} 
-              width={260} 
-              height={260} 
-            />
-            <ElevationProfileChart 
-              profile={selectedDetailedPass.elevation_profile} 
-              minElevationThreshold={minElev} 
-              width={380} 
-              height={260} 
-            />
+          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexGrow: 1, alignItems: 'stretch' }}>
+            <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ color: 'var(--text-bright)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.1em', marginBottom: '8px', opacity: 0.8 }}>POLAR SKY VIEW</div>
+              <SkyViewChart 
+                profile={selectedDetailedPass.elevation_profile} 
+                maxElevation={selectedDetailedPass.max_elevation_deg} 
+                width={240} 
+                height={240} 
+              />
+            </div>
+            <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}>
+              <div style={{ color: 'var(--text-bright)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.1em', marginBottom: '8px', opacity: 0.8 }}>ELEVATION PROFILE</div>
+              <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', width: '100%' }}>
+                <ElevationProfileChart 
+                  profile={selectedDetailedPass.elevation_profile} 
+                  minElevationThreshold={minElev} 
+                  width={420} 
+                  height={240} 
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
 };
+
+export const PassTimelinePanel = React.memo(PassTimelinePanelInner);

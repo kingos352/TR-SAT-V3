@@ -6,7 +6,7 @@ interface CollapsibleWrapperProps {
   defaultOpen?: boolean;
 }
 
-export const CollapsibleWrapper: React.FC<CollapsibleWrapperProps> = ({ title, children, defaultOpen = false }) => {
+export const CollapsibleWrapper: React.FC<CollapsibleWrapperProps & { keepMounted?: boolean }> = ({ title, children, defaultOpen = false, keepMounted = false }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
@@ -39,7 +39,7 @@ export const CollapsibleWrapper: React.FC<CollapsibleWrapperProps> = ({ title, c
           if (!isOpen) e.currentTarget.style.background = 'transparent';
         }}
       >
-        <span style={{ 
+        <span className="collapsible-arrow" style={{ 
           fontSize: '8px',
           color: isOpen ? 'var(--accent-cyan)' : 'var(--text-muted)',
           transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -52,13 +52,15 @@ export const CollapsibleWrapper: React.FC<CollapsibleWrapperProps> = ({ title, c
         <span>{title}</span>
       </div>
       
-      {/* Content — rendered naturally in document flow, no overflow clipping */}
-      <div style={{ 
-        padding: '12px 16px 16px 16px',
-        display: isOpen ? 'block' : 'none'
-      }}>
-        {children}
-      </div>
+      {/* Content — only rendered when open to avoid mounting expensive children, unless keepMounted is true */}
+      {(isOpen || keepMounted) && (
+        <div style={{ 
+          padding: '12px 16px 16px 16px',
+          display: isOpen ? 'block' : 'none'
+        }}>
+          {children}
+        </div>
+      )}
     </div>
   );
 };

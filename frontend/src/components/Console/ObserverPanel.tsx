@@ -4,17 +4,15 @@ import { getCatalogAER, getCatalogPasses } from '../../api/client';
 import { useTranslation } from '../../i18n/useTranslation';
 
 export const ObserverPanel: React.FC = () => {
-  const {
-    activeObject,
-    observer,
-    setObserver,
-    activeAER,
-    setActiveAER,
-    activePasses,
-    setActivePasses,
-    addLog,
-    setApiStatus
-  } = useConsoleStore();
+  const activeObject = useConsoleStore(s => s.activeObject);
+  const observer = useConsoleStore(s => s.observer);
+  const setObserver = useConsoleStore(s => s.setObserver);
+  const activeAER = useConsoleStore(s => s.activeAER);
+  const setActiveAER = useConsoleStore(s => s.setActiveAER);
+  const activePasses = useConsoleStore(s => s.activePasses);
+  const setActivePasses = useConsoleStore(s => s.setActivePasses);
+  const addLog = useConsoleStore(s => s.addLog);
+  const setApiStatus = useConsoleStore(s => s.setApiStatus);
   const { t } = useTranslation();
 
   // Form states initialized from Zustand

@@ -3,15 +3,13 @@ import { useConsoleStore } from '../../store/useConsoleStore';
 import { getCatalogState, getCatalogEphemeris } from '../../api/client';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export const TelemetryPanel: React.FC = () => {
-  const {
-    activeObject,
-    activeState,
-    setActiveState,
-    setActiveEphemeris,
-    addLog,
-    setApiStatus
-  } = useConsoleStore();
+const TelemetryPanelInner: React.FC = () => {
+  const activeObject = useConsoleStore(s => s.activeObject);
+  const activeState = useConsoleStore(s => s.activeState);
+  const setActiveState = useConsoleStore(s => s.setActiveState);
+  const setActiveEphemeris = useConsoleStore(s => s.setActiveEphemeris);
+  const addLog = useConsoleStore(s => s.addLog);
+  const setApiStatus = useConsoleStore(s => s.setApiStatus);
   const { t } = useTranslation();
 
   const [loading, setLoading] = useState(false);
@@ -276,3 +274,5 @@ export const TelemetryPanel: React.FC = () => {
     </div>
   );
 };
+
+export const TelemetryPanel = React.memo(TelemetryPanelInner);

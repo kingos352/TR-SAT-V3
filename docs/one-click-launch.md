@@ -4,7 +4,14 @@ TR-SAT Mission Control V3 has been packaged to run as a single integrated applic
 
 ## Scripts Overview
 
-### 1. `TR-SAT-Build.bat`
+### Unified Interactive Launcher
+**`TR-SAT.bat`**
+The easiest way to operate TR-SAT is via the new unified interactive menu. Running this file will open a command-line interface allowing you to choose between building or starting the Web App and Desktop Executable.
+
+### Quick Shortcuts
+The following `.bat` files are available in the root directory for quick access (they simply call their corresponding PowerShell scripts located in `scripts/windows/`):
+
+#### 1. `TR-SAT-Build.bat`
 Run this script once after cloning the repository, or after pulling any updates from GitHub. 
 It performs the following automatically:
 - Checks for Node.js (`npm`) and Python.
@@ -14,14 +21,14 @@ It performs the following automatically:
 - Runs backend tests to verify integrity.
 - Builds the React frontend into static files (`frontend/dist`).
 
-### 2. `TR-SAT-Start.bat`
+#### 2. `TR-SAT-Start.bat`
 Run this script to launch the application.
 It performs the following automatically:
 - Starts the FastAPI backend server on `127.0.0.1:8000`.
 - Serves the built frontend directly from the backend.
 - Opens your default web browser to the application URL.
 
-### 3. `TR-SAT-App.bat`
+#### 3. `TR-SAT-App.bat`
 Run this script for a Desktop-like App Window Mode.
 - It uses Microsoft Edge or Chrome in `--app` mode to open the frontend without address bars or browser tabs.
 - It is not a full native Electron/Tauri package; it preserves the local-first FastAPI + React architecture but gives a desktop feel.

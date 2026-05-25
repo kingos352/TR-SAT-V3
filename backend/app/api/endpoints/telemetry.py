@@ -22,8 +22,14 @@ async def websocket_telemetry(websocket: WebSocket):
         rate_hz = 1.0
         status = "connected" # connected, paused, resumed, stopped
         
+        async def safe_send(payload):
+            try:
+                await websocket.send_json(payload)
+            except RuntimeError:
+                raise WebSocketDisconnect()
+
         # Send initial status
-        await websocket.send_json({
+        await safe_send({
             "type": "status",
             "status": "connected"
         })
@@ -66,7 +72,7 @@ async def websocket_telemetry(websocket: WebSocket):
                         if action in ("subscribe", "update"):
                             ids = payload.get("norad_ids", [])
                             if not isinstance(ids, list):
-                                await websocket.send_json({
+                                await safe_send({
                                     "type": "error",
                                     "message": "norad_ids must be a list of integers",
                                     "details": {}
@@ -77,7 +83,7 @@ async def websocket_telemetry(websocket: WebSocket):
                             try:
                                 ids = [int(i) for i in ids]
                             except (ValueError, TypeError):
-                                await websocket.send_json({
+                                await safe_send({
                                     "type": "error",
                                     "message": "norad_ids must be a list of integers",
                                     "details": {}
@@ -85,7 +91,7 @@ async def websocket_telemetry(websocket: WebSocket):
                                 continue
                                 
                             if len(ids) > 20:
-                                await websocket.send_json({
+                                await safe_send({
                                     "type": "error",
                                     "message": "Maximum tracking selection limit is 20 objects.",
                                     "details": {"requested_count": len(ids)}
@@ -110,14 +116,14 @@ async def websocket_telemetry(websocket: WebSocket):
                                 
                             status = "resumed" if action == "update" else "connected"
                             
-                            await websocket.send_json({
+                            await safe_send({
                                 "type": "status",
                                 "status": "connected" if action == "subscribe" else "resumed"
                             })
                             
                             # If there were missing TLEs, send an error frame
                             if errors:
-                                await websocket.send_json({
+                                await safe_send({
                                     "type": "error",
                                     "message": "Some requested objects were missing from local cache",
                                     "details": {"missing_ids": missing}
@@ -125,13 +131,13 @@ async def websocket_telemetry(websocket: WebSocket):
                                 
                         elif action == "pause":
                             status = "paused"
-                            await websocket.send_json({
+                            await safe_send({
                                 "type": "status",
                                 "status": "paused"
                             })
                         elif action == "resume":
                             status = "resumed"
-                            await websocket.send_json({
+                            await safe_send({
                                 "type": "status",
                                 "status": "resumed"
                             })
@@ -139,24 +145,24 @@ async def websocket_telemetry(websocket: WebSocket):
                             status = "stopped"
                             subscribed_ids = []
                             cached_tles = {}
-                            await websocket.send_json({
+                            await safe_send({
                                 "type": "status",
                                 "status": "stopped"
                             })
                         else:
-                            await websocket.send_json({
+                            await safe_send({
                                 "type": "error",
                                 "message": f"Unknown action: {action}",
                                 "details": {}
                             })
                     except json.JSONDecodeError:
-                        await websocket.send_json({
+                        await safe_send({
                             "type": "error",
                             "message": "Malformed JSON payload",
                             "details": {}
                         })
                     except Exception as e:
-                        await websocket.send_json({
+                        await safe_send({
                             "type": "error",
                             "message": f"Internal receiver error: {str(e)}",
                             "details": {}
@@ -204,13 +210,13 @@ async def websocket_telemetry(websocket: WebSocket):
                                 errors.append(f"No TLE found in local catalog for NORAD ID {norad_id}")
                                 
                         if not objects:
-                            await websocket.send_json({
+                            await safe_send({
                                 "type": "error",
                                 "message": "All selected objects failed to propagate or are missing TLEs.",
                                 "details": {"requested_ids": subscribed_ids, "errors": errors}
                             })
                         else:
-                            await websocket.send_json({
+                            await safe_send({
                                 "type": "telemetry_frame",
                                 "timestamp_utc": now.isoformat(),
                                 "rate_hz": rate_hz,

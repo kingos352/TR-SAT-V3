@@ -1,0 +1,58 @@
+{
+  "name": "tr-sat-mission-control-v3",
+  "version": "3.0.0",
+  "description": "TR-SAT Mission Control V3 - Local Orbital Intelligence Platform",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "author": "TR-SAT",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.trsat.missioncontrol",
+    "productName": "TR-SAT Mission Control V3",
+    "directories": {
+      "output": "../dist-desktop"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "backend-exe",
+        "to": "backend-exe",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "frontend-dist",
+        "to": "frontend-dist",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TR-SAT Mission Control V3",
+      "artifactName": "TR-SAT-Mission-Control-V3-Setup.exe"
+    }
+  }
+}

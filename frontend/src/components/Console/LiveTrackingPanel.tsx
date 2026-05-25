@@ -23,17 +23,15 @@ function buildWsUrl() {
 const WS_URL = buildWsUrl();
 
 export const LiveTrackingPanel: React.FC = () => {
-  const {
-    selectedObjects,
-    liveTrackingEnabled,
-    liveConnectionStatus,
-    liveRateHz,
-    lastTelemetryFrameUtc,
-    liveErrors,
-    liveObjectStates,
-    setLiveTrackingEnabled,
-    setLiveRateHz
-  } = useConsoleStore();
+  const selectedObjects = useConsoleStore(s => s.selectedObjects);
+  const liveTrackingEnabled = useConsoleStore(s => s.liveTrackingEnabled);
+  const liveConnectionStatus = useConsoleStore(s => s.liveConnectionStatus);
+  const liveRateHz = useConsoleStore(s => s.liveRateHz);
+  const lastTelemetryFrameUtc = useConsoleStore(s => s.lastTelemetryFrameUtc);
+  const liveErrors = useConsoleStore(s => s.liveErrors);
+  const liveObjectStates = useConsoleStore(s => s.liveObjectStates);
+  const setLiveTrackingEnabled = useConsoleStore(s => s.setLiveTrackingEnabled);
+  const setLiveRateHz = useConsoleStore(s => s.setLiveRateHz);
   const { t } = useTranslation();
 
   const { pause, resume, stop, connect, disconnect } = useTelemetrySocket();

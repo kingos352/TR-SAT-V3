@@ -4,7 +4,17 @@ __pycache__/
 *.pyc
 .env
 *.sqlite
+*.sqlite3
+data/*.sqlite
+data/*.sqlite3
+backend/*.sqlite
+backend/*.sqlite3
+!data/.gitkeep
 node_modules/
 dist/
 .vite/
 .DS_Store
+build/
+data/
+dist-desktop/
+trsat-backend.spec

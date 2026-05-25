@@ -55,14 +55,22 @@ TR-SAT operates as a decoupled monorepo:
 ## ⚙️ Quick Start
 
 ### One-Click Launch (Windows)
-The easiest way to run TR-SAT Mission Control V3 is using the provided one-click launcher scripts.
+The easiest way to run TR-SAT Mission Control V3 is using the new unified interactive launcher or the provided quick shortcuts.
 
-1. **Build the Application** (Run this once or after updates):
-   Double-click `TR-SAT-Build.bat`. This script will automatically set up your `.env` file, install Python and Node dependencies, and build the React frontend.
-2. **Start the Application**:
-   Double-click `TR-SAT-Start.bat`. This will start the FastAPI backend on port 8000 (serving the built frontend) and automatically open your browser at `http://127.0.0.1:8000`.
-3. **App Window Mode (Optional)**:
-   Double-click `TR-SAT-App.bat` to open the application in a standalone desktop-like window without browser tabs or an address bar (requires Microsoft Edge or Google Chrome).
+**Using the Unified Launcher:**
+- Double-click `TR-SAT.bat`. This interactive menu lets you build or start the web app and desktop executable from one place.
+
+**Using Quick Shortcuts:**
+The quick shortcuts are still available in the root directory for convenience:
+1. **Build the Application**: Double-click `TR-SAT-Build.bat`.
+2. **Start the Application**: Double-click `TR-SAT-Start.bat`.
+3. **App Window Mode**: Double-click `TR-SAT-App.bat`.
+
+*Note: The underlying PowerShell scripts for these operations have been categorized into the `scripts/windows/` directory. The local SQLite runtime database is safely stored in the `data/` directory.*
+
+### Native Desktop Application
+You can compile TR-SAT into a standalone Windows Executable (`.exe`) using the included Electron + PyInstaller build pipeline.
+See [Desktop App Packaging Guide](docs/desktop-app.md) for instructions on how to run `TR-SAT-Desktop-Build.bat` and locate the portable executable.
 
 ### Manual Development Mode
 If you prefer running the separate dev servers:

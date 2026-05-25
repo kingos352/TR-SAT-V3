@@ -3,15 +3,19 @@ import { useConsoleStore } from '../../store/useConsoleStore';
 import { useTranslation } from '../../i18n/useTranslation';
 
 export const GlobeControlsPanel: React.FC = () => {
-  const {
-    activeObject,
-    showOrbitPath, setShowOrbitPath,
-    showGroundTrack, setShowGroundTrack,
-    showObserver, setShowObserver,
-    enableEarthLighting, setEnableEarthLighting,
-    enableEarthRotation, setEnableEarthRotation,
-    followActiveObject, setFollowActiveObject
-  } = useConsoleStore();
+  const activeObject = useConsoleStore(s => s.activeObject);
+  const showOrbitPath = useConsoleStore(s => s.showOrbitPath);
+  const setShowOrbitPath = useConsoleStore(s => s.setShowOrbitPath);
+  const showGroundTrack = useConsoleStore(s => s.showGroundTrack);
+  const setShowGroundTrack = useConsoleStore(s => s.setShowGroundTrack);
+  const showObserver = useConsoleStore(s => s.showObserver);
+  const setShowObserver = useConsoleStore(s => s.setShowObserver);
+  const enableEarthLighting = useConsoleStore(s => s.enableEarthLighting);
+  const setEnableEarthLighting = useConsoleStore(s => s.setEnableEarthLighting);
+  const enableEarthRotation = useConsoleStore(s => s.enableEarthRotation);
+  const setEnableEarthRotation = useConsoleStore(s => s.setEnableEarthRotation);
+  const followActiveObject = useConsoleStore(s => s.followActiveObject);
+  const setFollowActiveObject = useConsoleStore(s => s.setFollowActiveObject);
   const { t } = useTranslation();
 
   return (

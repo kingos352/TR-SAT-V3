@@ -3,8 +3,13 @@ import { useConsoleStore } from '../../store/useConsoleStore';
 import { screenConjunction, ConjunctionScreenRequest } from '../../api/client';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export const ConjunctionPanel: React.FC = () => {
-  const { selectedObjects, activeObject, setConjunctionResults, conjunctionResults, setActiveConjunctionResult, addLog } = useConsoleStore();
+const ConjunctionPanelInner: React.FC = () => {
+  const selectedObjects = useConsoleStore(s => s.selectedObjects);
+  const activeObject = useConsoleStore(s => s.activeObject);
+  const setConjunctionResults = useConsoleStore(s => s.setConjunctionResults);
+  const conjunctionResults = useConsoleStore(s => s.conjunctionResults);
+  const setActiveConjunctionResult = useConsoleStore(s => s.setActiveConjunctionResult);
+  const addLog = useConsoleStore(s => s.addLog);
   const { t } = useTranslation();
   
   const [mode, setMode] = useState<'selected_vs_selected' | 'primary_vs_catalog'>('selected_vs_selected');
@@ -229,3 +234,5 @@ export const ConjunctionPanel: React.FC = () => {
     </div>
   );
 };
+
+export const ConjunctionPanel = React.memo(ConjunctionPanelInner);

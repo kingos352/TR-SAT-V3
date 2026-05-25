@@ -21,6 +21,17 @@ def sync_catalog(req: CatalogSyncRequest, db: Session = Depends(get_db)):
     try:
         response = ingest_celestrak_group(db, req.group)
         return response
+    except ValueError as e:
+        return CatalogSyncResponse(
+            group=req.group,
+            fetched_count=0,
+            parsed_count=0,
+            inserted_objects=0,
+            inserted_tles=0,
+            updated_objects=0,
+            skipped_count=0,
+            warning=str(e)
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,

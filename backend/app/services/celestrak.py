@@ -37,7 +37,15 @@ def fetch_celestrak_group(group: str, timeout_seconds: int = 20) -> str:
     Fetch raw TLE stream from CelesTrak API using httpx.
     """
     url = build_celestrak_url(group)
-    response = httpx.get(url, timeout=timeout_seconds)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    response = httpx.get(url, headers=headers, timeout=timeout_seconds)
+    if response.status_code == 403 and "has not updated" in response.text:
+        raise ValueError(
+            "CelesTrak rate limit: Data has not updated since your last download. "
+            "CelesTrak elements are updated once every 2 hours. Please try again later."
+        )
     if response.status_code != 200:
         raise RuntimeError(f"CelesTrak request failed with status: {response.status_code}")
     return response.text

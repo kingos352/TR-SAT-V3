@@ -3,17 +3,15 @@ import { useConsoleStore } from '../../store/useConsoleStore';
 import { getCatalogSnapshot, CatalogSnapshotObject, CatalogObject } from '../../api/client';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export const CatalogLayerPanel: React.FC = () => {
-  const {
-    catalogLayerEnabled,
-    setCatalogLayerEnabled,
-    catalogLayerObjects,
-    setCatalogLayerObjects,
-    catalogLayerLoading,
-    setCatalogLayerLoading,
-    setActiveObject,
-    addLog,
-  } = useConsoleStore();
+const CatalogLayerPanelInner: React.FC = () => {
+  const catalogLayerEnabled = useConsoleStore(s => s.catalogLayerEnabled);
+  const setCatalogLayerEnabled = useConsoleStore(s => s.setCatalogLayerEnabled);
+  const catalogLayerObjects = useConsoleStore(s => s.catalogLayerObjects);
+  const setCatalogLayerObjects = useConsoleStore(s => s.setCatalogLayerObjects);
+  const catalogLayerLoading = useConsoleStore(s => s.catalogLayerLoading);
+  const setCatalogLayerLoading = useConsoleStore(s => s.setCatalogLayerLoading);
+  const setActiveObject = useConsoleStore(s => s.setActiveObject);
+  const addLog = useConsoleStore(s => s.addLog);
   const { t } = useTranslation();
 
   const [limit, setLimit] = useState<number>(1000);
@@ -216,3 +214,5 @@ export const CatalogLayerPanel: React.FC = () => {
     </div>
   );
 };
+
+export const CatalogLayerPanel = React.memo(CatalogLayerPanelInner);

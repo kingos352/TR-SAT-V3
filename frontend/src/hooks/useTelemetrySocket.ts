@@ -243,12 +243,14 @@ export const useTelemetrySocket = () => {
           norad_ids: ids,
           rate_hz: liveRateHz
         }));
+      } else if (!socketRef.current || (socketRef.current.readyState !== WebSocket.OPEN && socketRef.current.readyState !== WebSocket.CONNECTING)) {
+        connect();
       }
     } else if (liveTrackingEnabled && selectedObjects.length === 0) {
       stop();
       disconnect();
     }
-  }, [selectedObjects, liveRateHz, liveTrackingEnabled, stop, disconnect]);
+  }, [selectedObjects, liveRateHz, liveTrackingEnabled, stop, disconnect, connect]);
 
   // Cleanup on unmount
   useEffect(() => {

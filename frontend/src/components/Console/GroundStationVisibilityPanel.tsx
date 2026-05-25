@@ -3,19 +3,17 @@ import { useConsoleStore } from '../../store/useConsoleStore';
 import { screenVisibility, VisibilityResultItem } from '../../api/client';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export const GroundStationVisibilityPanel: React.FC = () => {
-  const {
-    observer,
-    visibilityResults,
-    setVisibilityResults,
-    visibilityScanActive,
-    setVisibilityScanActive,
-    setActiveObject,
-    selectObject,
-    selectedObjects,
-    removeSelectedObject,
-    addLog,
-  } = useConsoleStore();
+const GroundStationVisibilityPanelInner: React.FC = () => {
+  const observer = useConsoleStore(s => s.observer);
+  const visibilityResults = useConsoleStore(s => s.visibilityResults);
+  const setVisibilityResults = useConsoleStore(s => s.setVisibilityResults);
+  const visibilityScanActive = useConsoleStore(s => s.visibilityScanActive);
+  const setVisibilityScanActive = useConsoleStore(s => s.setVisibilityScanActive);
+  const setActiveObject = useConsoleStore(s => s.setActiveObject);
+  const selectObject = useConsoleStore(s => s.selectObject);
+  const selectedObjects = useConsoleStore(s => s.selectedObjects);
+  const removeSelectedObject = useConsoleStore(s => s.removeSelectedObject);
+  const addLog = useConsoleStore(s => s.addLog);
   const { t } = useTranslation();
 
   const [minElevation, setMinElevation] = useState<number>(10);
@@ -259,3 +257,5 @@ export const GroundStationVisibilityPanel: React.FC = () => {
       </div>
   );
 };
+
+export const GroundStationVisibilityPanel = React.memo(GroundStationVisibilityPanelInner);

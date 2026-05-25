@@ -28,9 +28,14 @@ app.include_router(api_router, prefix="/api/v1")
 
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi import HTTPException
+import os
 from pathlib import Path
 
-FRONTEND_DIST_DIR = Path(__file__).parent.parent.parent / "frontend" / "dist"
+frontend_dist_env = os.environ.get("TRSAT_FRONTEND_DIST_DIR")
+if frontend_dist_env:
+    FRONTEND_DIST_DIR = Path(frontend_dist_env)
+else:
+    FRONTEND_DIST_DIR = Path(__file__).parent.parent.parent / "frontend" / "dist"
 
 @app.get("/api")
 async def api_root():

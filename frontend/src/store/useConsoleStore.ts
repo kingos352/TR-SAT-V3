@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { CatalogObject, SatelliteState, ObserverAER, PassWindow, ConjunctionResult, CatalogSnapshotObject, getCatalogEphemeris } from '../api/client';
+import { CatalogObject, SatelliteState, ObserverAER, PassWindow, ConjunctionResult, CatalogSnapshotObject, getCatalogEphemeris, getCatalogState } from '../api/client';
 
 export interface ObserverConfig {
   name: string;
@@ -303,7 +303,28 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
   setActiveObject: (obj) => set((state) => {
     // Automatically fetch object reliability when setting active object
     if (obj) {
-      setTimeout(() => useConsoleStore.getState().fetchActiveObjectReliability(), 0);
+      setTimeout(() => {
+        const store = useConsoleStore.getState();
+        store.fetchActiveObjectReliability();
+        
+        // Auto-fetch current position (for the red dot)
+        const nowUtc = new Date().toISOString();
+        getCatalogState({ norad_id: obj.norad_id, timestamp_utc: nowUtc })
+          .then(res => store.setActiveState(res))
+          .catch(err => store.addLog(`Auto-Propagation error: ${err.message}`));
+          
+        // Auto-fetch orbit path
+        const startTime = new Date(new Date().getTime() - 45 * 60 * 1000).toISOString();
+        const endTime = new Date(new Date().getTime() + 45 * 60 * 1000).toISOString();
+        getCatalogEphemeris({
+          norad_id: obj.norad_id,
+          start_time_utc: startTime,
+          end_time_utc: endTime,
+          step_seconds: 60
+        })
+          .then(ephemeris => store.setActiveEphemeris(ephemeris))
+          .catch(err => store.addLog(`Auto-Ephemeris error: ${err.message}`));
+      }, 0);
     }
     return {
       activeObject: obj,

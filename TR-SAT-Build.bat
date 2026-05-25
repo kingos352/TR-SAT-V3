@@ -1,3 +1,3 @@
 @echo off
-PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0TR-SAT-Build.ps1'"
+PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0scripts\windows\TR-SAT-Build.ps1'"
 pause

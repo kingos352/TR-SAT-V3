@@ -3,14 +3,12 @@ import { useConsoleStore } from '../../store/useConsoleStore';
 import { sendAssistantMessage } from '../../api/client';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export const AssistantPanel: React.FC = () => {
-  const {
-    activeObject,
-    activeState,
-    observer,
-    activeConjunctionResult,
-    visibilityResults
-  } = useConsoleStore();
+const AssistantPanelInner: React.FC = () => {
+  const activeObject = useConsoleStore(s => s.activeObject);
+  const activeState = useConsoleStore(s => s.activeState);
+  const observer = useConsoleStore(s => s.observer);
+  const activeConjunctionResult = useConsoleStore(s => s.activeConjunctionResult);
+  const visibilityResults = useConsoleStore(s => s.visibilityResults);
   const { t } = useTranslation();
 
   const [input, setInput] = useState('');
@@ -36,19 +34,18 @@ export const AssistantPanel: React.FC = () => {
     setLoading(true);
 
     try {
-      // Build context
       const context = {
         activeObject,
         activeState,
         observer,
         activeConjunctionResult,
-        visibilityResults: visibilityResults.slice(0, 5) // truncate to avoid huge payloads
+        visibilityResults: visibilityResults.slice(0, 5)
       };
 
       const response = await sendAssistantMessage({
         message: userMsg,
         context,
-        language: 'en' // Pass language dynamically if needed, 'en' works for smoke test
+        language: 'en'
       });
       setProviderMode(response.mode);
       setHistory(prev => [...prev, { role: 'assistant', content: response.answer }]);
@@ -192,3 +189,5 @@ export const AssistantPanel: React.FC = () => {
     </div>
   );
 };
+
+export const AssistantPanel = React.memo(AssistantPanelInner);

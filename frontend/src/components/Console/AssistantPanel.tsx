@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { sendAssistantMessage } from '../../api/client';
+import { useTranslation } from '../../i18n/useTranslation';
 
 export const AssistantPanel: React.FC = () => {
   const {
@@ -10,11 +11,12 @@ export const AssistantPanel: React.FC = () => {
     activeConjunctionResult,
     visibilityResults
   } = useConsoleStore();
+  const { t } = useTranslation();
 
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<string>('Standby');
+  const [providerMode, setProviderMode] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -45,13 +47,14 @@ export const AssistantPanel: React.FC = () => {
 
       const response = await sendAssistantMessage({
         message: userMsg,
-        context
+        context,
+        language: 'en' // Pass language dynamically if needed, 'en' works for smoke test
       });
-
-      setMode(response.mode);
-      setHistory(prev => [...prev, { role: 'assistant', content: response.reply }]);
+      setProviderMode(response.mode);
+      setHistory(prev => [...prev, { role: 'assistant', content: response.answer }]);
     } catch (err: any) {
-      setHistory(prev => [...prev, { role: 'assistant', content: `Error: ${err.message}` }]);
+      setProviderMode('local_fallback');
+      setHistory(prev => [...prev, { role: 'assistant', content: `${t('assistant.error')} ${err.message}` }]);
     } finally {
       setLoading(false);
     }
@@ -67,21 +70,7 @@ export const AssistantPanel: React.FC = () => {
   ];
 
   return (
-    <details className="glass-panel" style={{ padding: '12px', borderRadius: '4px' }}>
-      <summary style={{ cursor: 'pointer', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span>AI Assistant</span>
-        <span style={{ 
-          fontSize: '9px', 
-          backgroundColor: mode === 'AI' ? 'rgba(34, 211, 238, 0.2)' : 'rgba(100, 100, 100, 0.2)', 
-          color: mode === 'AI' ? 'var(--accent-cyan)' : 'var(--text-muted)', 
-          padding: '2px 6px', 
-          borderRadius: '12px' 
-        }}>
-          {mode}
-        </span>
-      </summary>
-      
-      <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         
         {/* Chat History */}
         <div style={{ 
@@ -98,7 +87,7 @@ export const AssistantPanel: React.FC = () => {
         }}>
           {history.length === 0 && (
             <div style={{ color: 'var(--text-muted)', fontSize: '11px', textAlign: 'center', margin: 'auto' }}>
-              How can I assist you with TR-SAT-V3 operations?
+              {t('assistant.greeting')}
             </div>
           )}
           {history.map((msg, i) => (
@@ -118,7 +107,7 @@ export const AssistantPanel: React.FC = () => {
           ))}
           {loading && (
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-              Thinking...
+              {t('assistant.thinking')}
             </div>
           )}
           <div ref={chatEndRef} />
@@ -146,6 +135,21 @@ export const AssistantPanel: React.FC = () => {
           ))}
         </div>
 
+        {providerMode && (
+          <div style={{ 
+            fontSize: '10px', 
+            color: providerMode === 'local_fallback' ? '#fbbf24' : '#4ade80',
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            border: `1px solid ${providerMode === 'local_fallback' ? 'rgba(251,191,36,0.3)' : 'rgba(74,222,128,0.3)'}`
+          }}>
+            {providerMode === 'local_fallback' 
+              ? '⚠️ Assistant provider unavailable. Using local fallback.' 
+              : '✅ AI Provider Active'}
+          </div>
+        )}
+
         {/* Input */}
         <div style={{ display: 'flex', gap: '4px' }}>
           <input
@@ -155,7 +159,7 @@ export const AssistantPanel: React.FC = () => {
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSend(input);
             }}
-            placeholder="Ask AI..."
+            placeholder={t('assistant.placeholder')}
             disabled={loading}
             style={{
               flex: 1,
@@ -181,11 +185,10 @@ export const AssistantPanel: React.FC = () => {
               fontWeight: 600
             }}
           >
-            Ask
+            {t('assistant.ask')}
           </button>
         </div>
 
-      </div>
-    </details>
+    </div>
   );
 };

@@ -3,6 +3,7 @@ import { useConsoleStore } from '../../store/useConsoleStore';
 import { MiniBarChart } from './Charts/MiniBarChart';
 import { DonutChart } from './Charts/DonutChart';
 import { HistogramChart } from './Charts/HistogramChart';
+import { useTranslation } from '../../i18n/useTranslation';
 
 export const SpaceEnvironmentDashboard: React.FC = () => {
   const { 
@@ -11,6 +12,7 @@ export const SpaceEnvironmentDashboard: React.FC = () => {
     analyticsError, 
     fetchCatalogAnalytics 
   } = useConsoleStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Initial fetch if we don't have it
@@ -20,11 +22,8 @@ export const SpaceEnvironmentDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="panel-container" style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', overflowY: 'auto', paddingRight: '4px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 className="panel-title" style={{ margin: 0, fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent-cyan)' }}>
-          Space Environment Dashboard
-        </h2>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', paddingRight: '4px' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <button 
           onClick={() => fetchCatalogAnalytics()}
           disabled={analyticsLoading}
@@ -40,7 +39,7 @@ export const SpaceEnvironmentDashboard: React.FC = () => {
             opacity: analyticsLoading ? 0.7 : 1
           }}
         >
-          {analyticsLoading ? 'Analyzing...' : 'Refresh Analytics'}
+          {analyticsLoading ? t('analytics.analyzing') : t('analytics.refresh')}
         </button>
       </div>
 
@@ -54,7 +53,7 @@ export const SpaceEnvironmentDashboard: React.FC = () => {
         fontStyle: 'italic',
         lineHeight: 1.4
       }}>
-        {catalogAnalyticsSummary ? catalogAnalyticsSummary.disclaimer : "Catalog analytics are derived from locally stored TLE/GP metadata and SGP4-derived orbital characteristics. They are intended for situational awareness, not certified operational SSA."}
+        {catalogAnalyticsSummary ? catalogAnalyticsSummary.disclaimer : t('analytics.disclaimer')}
       </div>
 
       {analyticsError && (
@@ -68,16 +67,16 @@ export const SpaceEnvironmentDashboard: React.FC = () => {
           
           {/* Key Metrics */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <MetricCard label="Total Objects" value={catalogAnalyticsSummary.total_objects.toLocaleString()} color="var(--accent-cyan)" />
-            <MetricCard label="Payloads" value={catalogAnalyticsSummary.by_object_type['PAYLOAD']?.toLocaleString() || '0'} color="#10B981" />
-            <MetricCard label="Debris" value={catalogAnalyticsSummary.by_object_type['DEBRIS']?.toLocaleString() || '0'} color="var(--accent-orange)" />
-            <MetricCard label="Stale TLE %" value={`${catalogAnalyticsSummary.stale_percentage.toFixed(1)}%`} color="#EF4444" />
+            <MetricCard label={t('analytics.total_objects')} value={catalogAnalyticsSummary.total_objects.toLocaleString()} color="var(--accent-cyan)" />
+            <MetricCard label={t('analytics.payloads')} value={catalogAnalyticsSummary.by_object_type['PAYLOAD']?.toLocaleString() || '0'} color="#10B981" />
+            <MetricCard label={t('analytics.debris')} value={catalogAnalyticsSummary.by_object_type['DEBRIS']?.toLocaleString() || '0'} color="var(--accent-orange)" />
+            <MetricCard label={t('analytics.stale_tle')} value={`${catalogAnalyticsSummary.stale_percentage.toFixed(1)}%`} color="#EF4444" />
           </div>
 
           {/* Charts Row 1 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div className="chart-card">
-              <h3 className="chart-title">Object Type Distribution</h3>
+              <h3 className="chart-title">{t('analytics.object_type_distribution')}</h3>
               <DonutChart 
                 data={Object.entries(catalogAnalyticsSummary.by_object_type).map(([k, v]) => ({
                   label: k,
@@ -90,7 +89,7 @@ export const SpaceEnvironmentDashboard: React.FC = () => {
             </div>
             
             <div className="chart-card">
-              <h3 className="chart-title">Orbital Regime</h3>
+              <h3 className="chart-title">{t('analytics.orbital_regime')}</h3>
               <DonutChart 
                 data={Object.entries(catalogAnalyticsSummary.by_orbital_regime)
                   .filter(([_, v]) => v > 0)
@@ -108,19 +107,19 @@ export const SpaceEnvironmentDashboard: React.FC = () => {
           {/* Charts Row 2 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div className="chart-card">
-              <h3 className="chart-title">Altitude Distribution</h3>
+              <h3 className="chart-title">{t('analytics.altitude_distribution')}</h3>
               <HistogramChart data={catalogAnalyticsSummary.altitude_bins} color="var(--accent-cyan)" />
             </div>
 
             <div className="chart-card">
-              <h3 className="chart-title">Inclination Distribution</h3>
+              <h3 className="chart-title">{t('analytics.inclination_distribution')}</h3>
               <HistogramChart data={catalogAnalyticsSummary.inclination_bins} color="#8B5CF6" />
             </div>
           </div>
 
           {/* Sources */}
           <div className="chart-card">
-            <h3 className="chart-title">Source Coverage</h3>
+            <h3 className="chart-title">{t('analytics.source_coverage')}</h3>
             <MiniBarChart 
               data={Object.entries(catalogAnalyticsSummary.by_source).map(([k, v]) => ({ label: k, value: v }))} 
               color="#10B981"

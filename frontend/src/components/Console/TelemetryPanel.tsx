@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { getCatalogState, getCatalogEphemeris } from '../../api/client';
+import { useTranslation } from '../../i18n/useTranslation';
 
 export const TelemetryPanel: React.FC = () => {
   const {
@@ -11,6 +12,7 @@ export const TelemetryPanel: React.FC = () => {
     addLog,
     setApiStatus
   } = useConsoleStore();
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(false);
   const [orbitLoading, setOrbitLoading] = useState(false);
@@ -69,53 +71,31 @@ export const TelemetryPanel: React.FC = () => {
 
   if (!activeObject) {
     return (
-      <section className="glass-panel" style={{
-        padding: '20px',
-        borderRadius: '8px',
+      <div style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        minHeight: '200px',
-        color: 'var(--text-muted)'
+        minHeight: '120px',
+        color: 'var(--text-muted)',
+        fontSize: '11px',
+        fontStyle: 'italic'
       }}>
-        <div style={{
-          border: '1px dashed rgba(75, 85, 99, 0.5)',
-          borderRadius: '8px',
-          padding: '24px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '8px',
-          backgroundColor: 'rgba(0,0,0,0.2)'
-        }}>
-          <span style={{ fontSize: '32px' }}>🛰️</span>
-          <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-bright)' }}>
-            No Active Object Selected
-          </div>
-          <div style={{ fontSize: '11px', textAlign: 'center', maxWidth: '200px' }}>
-            Search the catalog and set an object as active to propagate its coordinates.
-          </div>
-        </div>
-      </section>
+        {t('telemetry.select_object')}
+      </div>
     );
   }
 
   return (
-    <section className="glass-panel" style={{
-      padding: '16px',
-      borderRadius: '8px',
+    <div style={{
       display: 'flex',
       flexDirection: 'column',
-      gap: '16px'
+      gap: '12px'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', marginBottom: '2px' }}>
-            RSO Operational State
-          </h2>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-bright)' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-bright)' }}>
             {activeObject.name}
           </h3>
         </div>
@@ -135,7 +115,7 @@ export const TelemetryPanel: React.FC = () => {
               transition: 'background-color 0.2s'
             }}
           >
-            {loading ? 'Propagating...' : 'Update State'}
+            {loading ? t('telemetry.propagating') : t('telemetry.update_state')}
           </button>
           <button
             onClick={handleUpdateOrbit}
@@ -152,7 +132,7 @@ export const TelemetryPanel: React.FC = () => {
               transition: 'background-color 0.2s'
             }}
           >
-            {orbitLoading ? 'Computing...' : 'Update Orbit'}
+            {orbitLoading ? t('telemetry.computing') : t('telemetry.update_orbit')}
           </button>
         </div>
       </div>
@@ -164,7 +144,7 @@ export const TelemetryPanel: React.FC = () => {
       }}>
         {/* NORAD ID Card */}
         <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px 10px' }}>
-          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>NORAD Catalog ID</div>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t('telemetry.norad_id')}</div>
           <div className="mono-text" style={{ fontSize: '16px', color: 'var(--text-bright)', fontWeight: 'bold', marginTop: '2px' }}>
             {activeObject.norad_id}
           </div>
@@ -172,7 +152,7 @@ export const TelemetryPanel: React.FC = () => {
 
         {/* COSPAR ID Card */}
         <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px 10px' }}>
-          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>COSPAR Launch ID</div>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t('telemetry.cospar_id')}</div>
           <div className="mono-text" style={{ fontSize: '16px', color: 'var(--text-bright)', fontWeight: 'bold', marginTop: '2px' }}>
             {activeObject.cospar_id || 'UNKNOWN'}
           </div>
@@ -180,7 +160,7 @@ export const TelemetryPanel: React.FC = () => {
 
         {/* Type Card */}
         <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px 10px' }}>
-          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Object Type</div>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t('telemetry.object_type')}</div>
           <div className="mono-text" style={{ fontSize: '14px', color: 'var(--accent-cyan)', fontWeight: 'bold', marginTop: '4px' }}>
             {activeObject.object_type}
           </div>
@@ -188,7 +168,7 @@ export const TelemetryPanel: React.FC = () => {
 
         {/* Category Card */}
         <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px 10px' }}>
-          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Category</div>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t('telemetry.category')}</div>
           <div className="mono-text" style={{ fontSize: '14px', color: 'var(--text-bright)', fontWeight: 'bold', marginTop: '4px' }}>
             {activeObject.category}
           </div>
@@ -205,7 +185,7 @@ export const TelemetryPanel: React.FC = () => {
           }}>
             {/* Latitude Card */}
             <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px' }}>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Latitude</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t('telemetry.latitude')}</div>
               <div className="mono-text" style={{ fontSize: '13px', color: 'var(--accent-cyan)', fontWeight: 'bold', marginTop: '2px' }}>
                 {activeState.latitude_deg.toFixed(4)}° N
               </div>
@@ -213,7 +193,7 @@ export const TelemetryPanel: React.FC = () => {
 
             {/* Longitude Card */}
             <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px' }}>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Longitude</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t('telemetry.longitude')}</div>
               <div className="mono-text" style={{ fontSize: '13px', color: 'var(--accent-cyan)', fontWeight: 'bold', marginTop: '2px' }}>
                 {activeState.longitude_deg.toFixed(4)}° E
               </div>
@@ -221,7 +201,7 @@ export const TelemetryPanel: React.FC = () => {
 
             {/* Altitude Card */}
             <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px' }}>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Altitude</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t('telemetry.altitude')}</div>
               <div className="mono-text" style={{ fontSize: '13px', color: 'var(--text-bright)', fontWeight: 'bold', marginTop: '2px' }}>
                 {activeState.altitude_km.toFixed(1)} km
               </div>
@@ -236,7 +216,7 @@ export const TelemetryPanel: React.FC = () => {
             padding: '10px 12px'
           }}>
             <h4 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}>
-              ECEF Coordinates (spherical approx)
+              {t('telemetry.ecef_coords')}
             </h4>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
               <div>X: <strong className="mono-text" style={{ color: 'var(--text-bright)' }}>{activeState.ecef.x_km.toFixed(3)} km</strong></div>
@@ -248,14 +228,14 @@ export const TelemetryPanel: React.FC = () => {
           {/* Reliability and Metadata */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', marginTop: '4px' }}>
             <div>
-              <span style={{ color: 'var(--text-muted)' }}>TLE Age: </span>
+              <span style={{ color: 'var(--text-muted)' }}>{t('telemetry.tle_age')} </span>
               <strong className="mono-text" style={{ color: 'var(--text-bright)' }}>
                 {activeState.tle_age_days ? `${activeState.tle_age_days.toFixed(2)} days` : 'N/A'}
               </strong>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Reliability:</span>
+              <span style={{ color: 'var(--text-muted)' }}>{t('telemetry.reliability')}</span>
               <span className="mono-text" style={{
                 backgroundColor: activeState.reliability_status === 'FRESH' ? 'rgba(16, 185, 129, 0.15)' :
                                  activeState.reliability_status === 'AGING' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(239, 68, 68, 0.15)',
@@ -270,13 +250,13 @@ export const TelemetryPanel: React.FC = () => {
                 fontWeight: 'bold',
                 textTransform: 'uppercase'
               }}>
-                {activeState.reliability_status}
+                {t(`reliability.${activeState.reliability_status.toLowerCase()}`)}
               </span>
             </div>
           </div>
 
           <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'right', marginTop: '2px' }}>
-            Epoch: <span className="mono-text">{activeState.timestamp_utc.replace('T', ' ').substring(0, 19)} UTC</span>
+            {t('telemetry.epoch')} <span className="mono-text">{activeState.timestamp_utc.replace('T', ' ').substring(0, 19)} UTC</span>
           </div>
 
         </div>
@@ -289,10 +269,10 @@ export const TelemetryPanel: React.FC = () => {
           color: 'var(--text-muted)',
           fontStyle: 'italic'
         }}>
-          Coordinates not calculated. Click 'Update State' to run SGP4 propagation.
+          {t('telemetry.not_calculated')}
         </div>
       )}
 
-    </section>
+    </div>
   );
 };

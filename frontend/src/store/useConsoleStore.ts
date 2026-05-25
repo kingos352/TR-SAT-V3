@@ -10,6 +10,7 @@ export interface ObserverConfig {
 }
 
 export interface ConsoleState {
+  language: 'en' | 'tr';
   apiStatus: 'checking' | 'connected' | 'disconnected';
   lastApiError: string | null;
   catalogGroup: string;
@@ -36,7 +37,7 @@ export interface ConsoleState {
   lastTelemetryFrameUtc: string | null;
   liveErrors: string[];
   logs: string[];
-  activePanel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources' | 'conjunction' | 'catalog_layer';
+  activePanel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources' | 'conjunction' | 'catalog_layer' | 'research';
 
   // Conjunction State
   conjunctionResults: ConjunctionResult[];
@@ -65,6 +66,14 @@ export interface ConsoleState {
   fetchCatalogAnalytics: () => Promise<void>;
   setAnalyticsFilters: (filters: Partial<ConsoleState['analyticsFilters']>) => void;
 
+  // Reliability State
+  reliabilitySummary: import('../api/client').ReliabilitySummary | null;
+  activeObjectReliability: import('../api/client').ObjectReliabilityDetail | null;
+  reliabilityLoading: boolean;
+  reliabilityError: string | null;
+  fetchReliabilitySummary: () => Promise<void>;
+  fetchActiveObjectReliability: () => Promise<void>;
+
   // Replay State
   replayEnabled: boolean;
   replayPlaying: boolean;
@@ -82,7 +91,22 @@ export interface ConsoleState {
   selectedDetailedPass: import('../api/client').DetailedPassWindow | null;
   isComputingDetailedPasses: boolean;
 
+  // Research State
+  tleHistory: import('../api/client').HistoricalTLEPoint[];
+  decayIndicators: import('../api/client').OrbitalDecayIndicators | null;
+  illuminationState: import('../api/client').IlluminationStateResponse['illumination_state'] | null;
+  relativeMotionResult: import('../api/client').RelativeMotionResult | null;
+  researchLoading: boolean;
+  researchError: string | null;
+
+  // Cesium Diagnostics
+  cesiumDiagnostics: { token: string, terrain: string, imagery: string };
+  setCesiumDiagnostics: (diagnostics: { token: string, terrain: string, imagery: string }) => void;
+
+
+
   // Actions
+  setLanguage: (lang: 'en' | 'tr') => void;
   setApiStatus: (status: 'checking' | 'connected' | 'disconnected', error?: string | null) => void;
   setCatalogResults: (results: CatalogObject[]) => void;
   setCatalogGroup: (group: string) => void;
@@ -108,7 +132,7 @@ export interface ConsoleState {
   setLastTelemetryFrameUtc: (timestamp: string | null) => void;
   setLiveErrors: (errors: string[]) => void;
   addLog: (log: string) => void;
-  setActivePanel: (panel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources' | 'conjunction' | 'catalog_layer') => void;
+  setActivePanel: (panel: 'mission_control' | 'catalog' | 'globe_config' | 'data_sources' | 'conjunction' | 'catalog_layer' | 'research') => void;
   setConjunctionResults: (results: ConjunctionResult[]) => void;
   setActiveConjunctionResult: (result: ConjunctionResult | null) => void;
   
@@ -137,9 +161,15 @@ export interface ConsoleState {
   setSelectedDetailedPass: (pass: import('../api/client').DetailedPassWindow | null) => void;
   setIsComputingDetailedPasses: (computing: boolean) => void;
   fetchDetailedPasses: (startUtc: string, endUtc: string, minElev: number, stepSec: number) => Promise<void>;
+
+  fetchTLEHistory: (norad_id: number) => Promise<void>;
+  fetchDecayIndicators: (norad_id: number) => Promise<void>;
+  fetchIllumination: (norad_id: number, timestamp_utc: string) => Promise<void>;
+  fetchRelativeMotion: (primary: number, secondary: number, tca_utc: string) => Promise<void>;
 }
 
 export const useConsoleStore = create<ConsoleState>((set) => ({
+  language: 'en',
   apiStatus: 'checking',
   lastApiError: null,
   catalogGroup: 'stations',
@@ -181,6 +211,11 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
   visibilityResults: [],
   visibilityScanActive: false,
 
+  reliabilitySummary: null,
+  activeObjectReliability: null,
+  reliabilityLoading: false,
+  reliabilityError: null,
+
   replayEnabled: false,
   replayPlaying: false,
   replayEphemeris: [],
@@ -196,6 +231,19 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
   detailedPasses: [],
   selectedDetailedPass: null,
   isComputingDetailedPasses: false,
+
+  // Research
+  tleHistory: [],
+  decayIndicators: null,
+  illuminationState: null,
+  relativeMotionResult: null,
+  researchLoading: false,
+  researchError: null,
+
+  cesiumDiagnostics: { token: 'Missing', terrain: 'Fallback', imagery: 'Fallback' },
+  setCesiumDiagnostics: (diagnostics) => set({ cesiumDiagnostics: diagnostics }),
+
+  setLanguage: (lang) => set({ language: lang }),
 
   setApiStatus: (status, error = null) => set((state) => ({
     apiStatus: status,
@@ -238,22 +286,45 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
       activeState: wasActive ? null : state.activeState,
       activeAER: wasActive ? null : state.activeAER,
       activePasses: wasActive ? [] : state.activePasses,
+      activeEphemeris: wasActive ? [] : state.activeEphemeris,
+      detailedPasses: wasActive ? [] : state.detailedPasses,
+      selectedDetailedPass: wasActive ? null : state.selectedDetailedPass,
+      activeObjectReliability: wasActive ? null : state.activeObjectReliability,
+      tleHistory: wasActive ? [] : state.tleHistory,
+      decayIndicators: wasActive ? null : state.decayIndicators,
+      illuminationState: wasActive ? null : state.illuminationState,
+      relativeMotionResult: wasActive ? null : state.relativeMotionResult,
+      replayEphemeris: wasActive ? [] : state.replayEphemeris,
       lastApiError: null,
       logs: [...state.logs, `Removed NORAD ID: ${noradId} from active selection set.`]
     };
   }),
 
-  setActiveObject: (obj) => set((state) => ({
-    activeObject: obj,
-    activeState: null,
-    activeAER: null,
-    activePasses: [],
-    activeEphemeris: [],
-    lastApiError: null,
-    logs: obj 
-      ? [...state.logs, `Active target focus set to: ${obj.name} (NORAD: ${obj.norad_id}).`]
-      : [...state.logs, `Active target focus cleared.`]
-  })),
+  setActiveObject: (obj) => set((state) => {
+    // Automatically fetch object reliability when setting active object
+    if (obj) {
+      setTimeout(() => useConsoleStore.getState().fetchActiveObjectReliability(), 0);
+    }
+    return {
+      activeObject: obj,
+      activeState: null,
+      activeAER: null,
+      activePasses: [],
+      activeEphemeris: [],
+      detailedPasses: [],
+      selectedDetailedPass: null,
+      activeObjectReliability: null,
+      tleHistory: [],
+      decayIndicators: null,
+      illuminationState: null,
+      relativeMotionResult: null,
+      replayEphemeris: [],
+      lastApiError: null,
+      logs: obj 
+        ? [...state.logs, `Active target focus set to: ${obj.name} (NORAD: ${obj.norad_id}).`]
+        : [...state.logs, `Active target focus cleared.`]
+    };
+  }),
 
   setObserver: (config) => set((state) => ({
     observer: config,
@@ -440,6 +511,95 @@ export const useConsoleStore = create<ConsoleState>((set) => ({
       set({ analyticsError: err.message || 'Failed to load catalog analytics' });
     } finally {
       set({ analyticsLoading: false });
+    }
+  },
+
+  fetchReliabilitySummary: async () => {
+    set({ reliabilityLoading: true, reliabilityError: null });
+    try {
+      const { getReliabilitySummary } = await import('../api/client');
+      const data = await getReliabilitySummary();
+      set({ reliabilitySummary: data });
+    } catch (err: any) {
+      console.error(err);
+      set({ reliabilityError: err.message || 'Failed to load reliability summary' });
+    } finally {
+      set({ reliabilityLoading: false });
+    }
+  },
+
+  fetchActiveObjectReliability: async () => {
+    const { activeObject } = useConsoleStore.getState();
+    if (!activeObject) {
+      set({ activeObjectReliability: null });
+      return;
+    }
+    set({ reliabilityLoading: true, reliabilityError: null });
+    try {
+      const { getObjectReliability } = await import('../api/client');
+      const data = await getObjectReliability(activeObject.norad_id);
+      set({ activeObjectReliability: data });
+    } catch (err: any) {
+      console.error(err);
+      set({ reliabilityError: err.message || 'Failed to load object reliability' });
+    } finally {
+      set({ reliabilityLoading: false });
+    }
+  },
+
+  fetchTLEHistory: async (norad_id) => {
+    set({ researchLoading: true, researchError: null });
+    try {
+      const { getHistoricalTLEs } = await import('../api/client');
+      const data = await getHistoricalTLEs(norad_id);
+      set({ tleHistory: data });
+    } catch (err: any) {
+      console.error(err);
+      set({ researchError: err.message || 'Failed to fetch TLE history' });
+    } finally {
+      set({ researchLoading: false });
+    }
+  },
+
+  fetchDecayIndicators: async (norad_id) => {
+    set({ researchLoading: true, researchError: null });
+    try {
+      const { getDecayIndicators } = await import('../api/client');
+      const data = await getDecayIndicators(norad_id);
+      set({ decayIndicators: data });
+    } catch (err: any) {
+      console.error(err);
+      set({ researchError: err.message || 'Failed to fetch decay indicators' });
+    } finally {
+      set({ researchLoading: false });
+    }
+  },
+
+  fetchIllumination: async (norad_id, timestamp_utc) => {
+    set({ researchLoading: true, researchError: null });
+    try {
+      const { getAdvancedIllumination } = await import('../api/client');
+      const data = await getAdvancedIllumination(norad_id, timestamp_utc);
+      set({ illuminationState: data.illumination_state });
+    } catch (err: any) {
+      console.error(err);
+      set({ researchError: err.message || 'Failed to fetch illumination state' });
+    } finally {
+      set({ researchLoading: false });
+    }
+  },
+
+  fetchRelativeMotion: async (primary, secondary, tca_utc) => {
+    set({ researchLoading: true, researchError: null });
+    try {
+      const { getAdvancedRelativeMotion } = await import('../api/client');
+      const data = await getAdvancedRelativeMotion(primary, secondary, tca_utc);
+      set({ relativeMotionResult: data });
+    } catch (err: any) {
+      console.error(err);
+      set({ researchError: err.message || 'Failed to fetch relative motion' });
+    } finally {
+      set({ researchLoading: false });
     }
   }
 }));

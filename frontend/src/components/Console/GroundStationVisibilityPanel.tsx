@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { screenVisibility, VisibilityResultItem } from '../../api/client';
+import { useTranslation } from '../../i18n/useTranslation';
 
 export const GroundStationVisibilityPanel: React.FC = () => {
   const {
@@ -15,6 +16,7 @@ export const GroundStationVisibilityPanel: React.FC = () => {
     removeSelectedObject,
     addLog,
   } = useConsoleStore();
+  const { t } = useTranslation();
 
   const [minElevation, setMinElevation] = useState<number>(10);
   const [highElevation, setHighElevation] = useState<number>(45);
@@ -71,15 +73,10 @@ export const GroundStationVisibilityPanel: React.FC = () => {
   };
 
   return (
-    <details className="glass-panel" style={{ padding: '12px', borderRadius: '4px' }}>
-      <summary style={{ cursor: 'pointer', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', fontWeight: 600 }}>
-        Live Visibility Scan
-      </summary>
-      
-      <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Min Elevation</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>{t('visibility.min_elevation')}</label>
             <select 
               value={minElevation} 
               onChange={e => setMinElevation(Number(e.target.value))}
@@ -97,7 +94,7 @@ export const GroundStationVisibilityPanel: React.FC = () => {
           </div>
 
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>High Elevation</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>{t('visibility.high_elevation')}</label>
             <select 
               value={highElevation} 
               onChange={e => setHighElevation(Number(e.target.value))}
@@ -114,7 +111,7 @@ export const GroundStationVisibilityPanel: React.FC = () => {
           </div>
 
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Object Type</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>{t('visibility.object_type')}</label>
             <select 
               value={objectType} 
               onChange={e => setObjectType(e.target.value)}
@@ -133,7 +130,7 @@ export const GroundStationVisibilityPanel: React.FC = () => {
           </div>
 
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Limit</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>{t('visibility.limit')}</label>
             <select 
               value={limit} 
               onChange={e => setLimit(Number(e.target.value))}
@@ -157,7 +154,7 @@ export const GroundStationVisibilityPanel: React.FC = () => {
             onChange={e => setIncludeDebris(e.target.checked)} 
             style={{ cursor: 'pointer' }}
           />
-          Include Debris (if ALL)
+          {t('visibility.include_debris')}
         </label>
 
         <button
@@ -170,18 +167,18 @@ export const GroundStationVisibilityPanel: React.FC = () => {
             opacity: visibilityScanActive ? 0.7 : 1, width: '100%'
           }}
         >
-          {visibilityScanActive ? 'SCANNING...' : 'SCAN VISIBLE OBJECTS'}
+          {visibilityScanActive ? t('visibility.scanning') : t('visibility.scan_visible_objects')}
         </button>
 
         <p style={{ fontSize: '9px', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: '1.2' }}>
-          ⓘ Elevation-based visibility estimate — not guaranteed optical visibility.
+          {t('visibility.estimate_warning')}
         </p>
 
         {visibilityResults && visibilityResults.length > 0 && (
           <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', marginTop: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <h3 style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>
-                Candidates ({visibilityResults.length})
+                {t('visibility.candidates')} ({visibilityResults.length})
               </h3>
             </div>
             
@@ -205,16 +202,16 @@ export const GroundStationVisibilityPanel: React.FC = () => {
                       backgroundColor: item.visibility_class === 'OVERHEAD' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(59, 130, 246, 0.2)',
                       color: item.visibility_class === 'OVERHEAD' ? 'var(--accent-green)' : 'var(--accent-blue)'
                     }}>
-                      {item.visibility_class || 'OBSERVABLE'}
+                      {item.visibility_class || t('visibility.observable')}
                     </span>
                   </div>
                   
                   <div className="mono-text" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '9px', color: 'var(--text-muted)' }}>
                     <div>NORAD: <span style={{ color: 'var(--text-bright)' }}>{item.norad_id}</span></div>
-                    <div>Type: <span style={{ color: 'var(--text-bright)' }}>{item.object_type}</span></div>
-                    <div>El: <span style={{ color: 'var(--accent-green)' }}>{item.elevation_deg?.toFixed(1)}°</span></div>
-                    <div>Az: <span style={{ color: 'var(--text-bright)' }}>{item.azimuth_deg?.toFixed(1)}°</span></div>
-                    <div style={{ gridColumn: 'span 2' }}>Range: <span style={{ color: 'var(--text-bright)' }}>{item.range_km?.toFixed(0)} km</span></div>
+                    <div>{t('visibility.type')}: <span style={{ color: 'var(--text-bright)' }}>{item.object_type}</span></div>
+                    <div>{t('visibility.el')}: <span style={{ color: 'var(--accent-green)' }}>{item.elevation_deg?.toFixed(1)}°</span></div>
+                    <div>{t('visibility.az')}: <span style={{ color: 'var(--text-bright)' }}>{item.azimuth_deg?.toFixed(1)}°</span></div>
+                    <div style={{ gridColumn: 'span 2' }}>{t('observer.range')} <span style={{ color: 'var(--text-bright)' }}>{item.range_km?.toFixed(0)} km</span></div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
@@ -234,7 +231,7 @@ export const GroundStationVisibilityPanel: React.FC = () => {
                         fontSize: '9px', cursor: 'pointer'
                       }}
                     >
-                      Set Active
+                      {t('visibility.set_active')}
                     </button>
                     <button
                       onClick={() => toggleSelection(item)}
@@ -245,7 +242,7 @@ export const GroundStationVisibilityPanel: React.FC = () => {
                         fontSize: '9px', cursor: 'pointer'
                       }}
                     >
-                      {isSelected(item.norad_id) ? 'Tracking' : 'Track'}
+                      {isSelected(item.norad_id) ? t('visibility.tracking') : t('visibility.track')}
                     </button>
                   </div>
                 </div>
@@ -256,10 +253,9 @@ export const GroundStationVisibilityPanel: React.FC = () => {
 
         {visibilityResults && visibilityResults.length === 0 && !visibilityScanActive && (
           <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '10px 0', fontSize: '10px' }}>
-            No objects currently visible matching criteria.
+            {t('visibility.no_objects')}
           </div>
         )}
       </div>
-    </details>
   );
 };

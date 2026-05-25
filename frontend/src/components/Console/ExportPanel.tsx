@@ -9,6 +9,7 @@ import {
   exportTrajectoryCZML, 
   exportMissionReport 
 } from '../../utils/exportSystem';
+import { useTranslation } from '../../i18n/useTranslation';
 
 export const ExportPanel: React.FC = () => {
   const {
@@ -20,6 +21,7 @@ export const ExportPanel: React.FC = () => {
     catalogLayerObjects,
     addLog
   } = useConsoleStore();
+  const { t } = useTranslation();
 
   const handleExportEphemerisCSV = () => {
     if (!activeObject || !activeEphemeris || activeEphemeris.length === 0) {
@@ -33,63 +35,58 @@ export const ExportPanel: React.FC = () => {
   const handleExportConjunctionsCSV = () => {
     if (!conjunctionResults || conjunctionResults.length === 0) return;
     exportConjunctionsCSV(conjunctionResults);
-    addLog("Export successful: Conjunction Screening CSV");
+    addLog(t('export.success_conjunction'));
   };
 
   const handleExportCatalogCSV = () => {
     if (!catalogLayerObjects || catalogLayerObjects.length === 0) return;
     exportCatalogCSV(catalogLayerObjects);
-    addLog(`Export successful: Catalog Snapshot CSV (${catalogLayerObjects.length} objects)`);
+    addLog(`${t('export.success_catalog_csv')} (${catalogLayerObjects.length})`);
   };
 
   const handleExportGroundTrackGeoJSON = () => {
     if (!activeObject || !activeEphemeris || activeEphemeris.length === 0) {
-      addLog("Export Error: Update Orbit before exporting GeoJSON.");
+      addLog(t('export.error_geojson'));
       return;
     }
     exportGroundTrackGeoJSON(activeEphemeris, activeObject.norad_id);
-    addLog(`Export successful: Ground Track GeoJSON for ${activeObject.name}`);
+    addLog(`${t('export.success_ground_track')} ${activeObject.name}`);
   };
 
   const handleExportCatalogGeoJSON = () => {
     if (!catalogLayerObjects || catalogLayerObjects.length === 0) return;
     exportCatalogGeoJSON(catalogLayerObjects);
-    addLog(`Export successful: Catalog Snapshot GeoJSON (${catalogLayerObjects.length} objects)`);
+    addLog(`${t('export.success_catalog_geojson')} (${catalogLayerObjects.length})`);
   };
 
   const handleExportCZML = () => {
     if (!activeObject || !activeEphemeris || activeEphemeris.length === 0) {
-      addLog("Export Error: Update Orbit before exporting CZML.");
+      addLog(t('export.error_czml'));
       return;
     }
     exportTrajectoryCZML(activeEphemeris, activeObject);
-    addLog(`Export successful: Trajectory CZML for ${activeObject.name}`);
+    addLog(`${t('export.success_czml')} ${activeObject.name}`);
   };
 
   const handleExportReportEN = () => {
     if (!activeObject) return;
     exportMissionReport('en', activeObject, activeState, activePasses, conjunctionResults);
-    addLog(`Export successful: Mission Report (EN) for ${activeObject.name}`);
+    addLog(`${t('export.success_report_en')} ${activeObject.name}`);
   };
 
   const handleExportReportTR = () => {
     if (!activeObject) return;
     exportMissionReport('tr', activeObject, activeState, activePasses, conjunctionResults);
-    addLog(`Export successful: Mission Report (TR) for ${activeObject.name}`);
+    addLog(`${t('export.success_report_tr')} ${activeObject.name}`);
   };
 
   return (
-    <details className="glass-panel" style={{ padding: '12px', borderRadius: '4px' }}>
-      <summary style={{ cursor: 'pointer', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', fontWeight: 600 }}>
-        Data Export System
-      </summary>
-      
-      <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         
         {/* Ephemeris & Trajectory Exports */}
         <div>
           <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }}>
-            Active Object Trajectory
+            {t('export.active_trajectory')}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <button 
@@ -107,7 +104,7 @@ export const ExportPanel: React.FC = () => {
                 opacity: (!activeObject || !activeEphemeris || activeEphemeris.length === 0) ? 0.4 : 1
               }}
             >
-              Ephemeris (CSV)
+              {t('export.ephemeris_csv')}
             </button>
             <button 
               onClick={handleExportGroundTrackGeoJSON}
@@ -124,7 +121,7 @@ export const ExportPanel: React.FC = () => {
                 opacity: (!activeObject || !activeEphemeris || activeEphemeris.length === 0) ? 0.4 : 1
               }}
             >
-              Ground Track (GeoJSON)
+              {t('export.ground_track_geojson')}
             </button>
             <button 
               onClick={handleExportCZML}
@@ -142,7 +139,7 @@ export const ExportPanel: React.FC = () => {
                 opacity: (!activeObject || !activeEphemeris || activeEphemeris.length === 0) ? 0.4 : 1
               }}
             >
-              3D Trajectory (CZML)
+              {t('export.trajectory_czml')}
             </button>
           </div>
         </div>
@@ -150,7 +147,7 @@ export const ExportPanel: React.FC = () => {
         {/* Catalog & Conjunction Exports */}
         <div>
           <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }}>
-            Catalog & Analysis
+            {t('export.catalog_analysis')}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <button 
@@ -168,7 +165,7 @@ export const ExportPanel: React.FC = () => {
                 opacity: (!conjunctionResults || conjunctionResults.length === 0) ? 0.4 : 1
               }}
             >
-              Conjunctions (CSV)
+              {t('export.conjunctions_csv')}
             </button>
             <button 
               onClick={handleExportCatalogCSV}
@@ -185,7 +182,7 @@ export const ExportPanel: React.FC = () => {
                 opacity: (!catalogLayerObjects || catalogLayerObjects.length === 0) ? 0.4 : 1
               }}
             >
-              Catalog (CSV)
+              {t('export.catalog_csv')}
             </button>
             <button 
               onClick={handleExportCatalogGeoJSON}
@@ -203,7 +200,7 @@ export const ExportPanel: React.FC = () => {
                 opacity: (!catalogLayerObjects || catalogLayerObjects.length === 0) ? 0.4 : 1
               }}
             >
-              Catalog Snapshot (GeoJSON)
+              {t('export.catalog_geojson')}
             </button>
           </div>
         </div>
@@ -211,7 +208,7 @@ export const ExportPanel: React.FC = () => {
         {/* Mission Reports */}
         <div>
           <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }}>
-            Mission Reports
+            {t('export.mission_reports')}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <button 
@@ -229,7 +226,7 @@ export const ExportPanel: React.FC = () => {
                 opacity: !activeObject ? 0.4 : 1
               }}
             >
-              Report (English)
+              {t('export.report_en')}
             </button>
             <button 
               onClick={handleExportReportTR}
@@ -246,12 +243,11 @@ export const ExportPanel: React.FC = () => {
                 opacity: !activeObject ? 0.4 : 1
               }}
             >
-              Rapor (Türkçe)
+              {t('export.report_tr')}
             </button>
           </div>
         </div>
 
       </div>
-    </details>
   );
 };

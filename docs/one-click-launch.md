@@ -21,6 +21,15 @@ It performs the following automatically:
 - Serves the built frontend directly from the backend.
 - Opens your default web browser to the application URL.
 
+### 3. `TR-SAT-App.bat`
+Run this script for a Desktop-like App Window Mode.
+- It uses Microsoft Edge or Chrome in `--app` mode to open the frontend without address bars or browser tabs.
+- It is not a full native Electron/Tauri package; it preserves the local-first FastAPI + React architecture but gives a desktop feel.
+- If the backend is already running (e.g. you previously used `TR-SAT-Start.bat`), it will detect it and instantly open the app window.
+
+## Desktop-like App Window Mode
+This new mode provides an immersive, standalone window experience while keeping the codebase lightweight. Normal browser mode still works concurrently or independently.
+
 ## Local Production Mode vs Manual Development Mode
 
 **Local Production Mode (One-Click):**

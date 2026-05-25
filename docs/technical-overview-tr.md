@@ -38,7 +38,7 @@ Sistem, seçilen binlerce nesnenin yalnızca belirli, tek bir anlık zaman dilim
 ## 7. Çıktılar ve Operasyonel Sınırlamalar
 Sistem tarafından dışa aktarılan **CZML** yörünge dosyaları ve **CSV** pozisyon çıktıları; görselleştirme, sunum ve akademik analiz (replay) amaçlıdır.
 
-Hiçbir şekilde gerçek uzay görevlerinde uydu komuta etmek amacıyla "onaylı operasyonel efemeris" (certified operational ephemeris) olarak kullanılamaz. Sonuçların doğruluğu, sisteme senkronize edilen TLE/GP verisinin güncelliğine (age) doğrudan bağlıdır. TLE verisi eskidikçe matematiksel sapmalar artacaktır.
+Hiçbir şekilde gerçek uzay görevlerinde uydu komuta etmek amacıyla "onaylı operasyonel efemeris" (certified operational ephemeris) olarak kullanılamaz. Sonuçların doğruluğu, sisteme senkronize edilen TLE/GP verisinin güncelliğine (age) doğrudan bağlıdır. TLE verisi eskidikçe matematiksel sapmalar artacaktır. TLE/GP tabanlı propagasyon doğruluğu, yörünge elemanlarının yaşlanmasıyla azalır. TR-SAT içerisindeki güvenilirlik göstergeleri kovaryans tabanlı belirsizlik analizleri değil, sezgisel farkındalık göstergeleridir. Phase 21 kapsamında sunulan "Advanced Research" modülü altındaki illumination analizi de approximate illumination awareness (matematiksel tahmin) seviyesindedir. Decay indicators ise heuristiktir (heuristic decay indicators), herhangi bir covariance (kovaryans) içermez, operasyonel yörünge belirleme (no operational orbit determination) iddiası taşımaz ve relative motion arayüzü çarpışma ihtimali (no collision probability) öngörüsü yapmaz.
 
 ## 8. Space Environment Dashboard ve Orbital Regime Classification
 

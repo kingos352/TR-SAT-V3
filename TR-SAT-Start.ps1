@@ -1,3 +1,6 @@
+param (
+    [switch]$AppMode
+)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
@@ -49,9 +52,12 @@ if (-not (Test-Path "frontend/dist/index.html")) {
 # 5. Port Check
 $port = 8000
 $connection = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+$startBackend = $true
+
 if ($connection) {
     Write-Host "Port $port is currently in use." -ForegroundColor Yellow
     $owningPids = $connection.OwningProcess | Select-Object -Unique
+    
     foreach ($procId in $owningPids) {
         if ($procId -gt 0) {
             $proc = Get-Process -Id $procId -ErrorAction SilentlyContinue
@@ -65,8 +71,23 @@ if ($connection) {
 }
 
 # 6. Start Application
-Write-Host "Starting TR-SAT Mission Control V3 at http://127.0.0.1:8000" -ForegroundColor Green
-Start-Process "http://127.0.0.1:8000"
+$url = "http://127.0.0.1:8000"
+if ($AppMode) {
+    Write-Host "Starting TR-SAT Mission Control V3 (App Window Mode) at $url" -ForegroundColor Green
+    try {
+        Start-Process msedge -ArgumentList "--app=$url", "--window-size=1600,950" -ErrorAction Stop
+    } catch {
+        try {
+            Start-Process chrome -ArgumentList "--app=$url", "--window-size=1600,950" -ErrorAction Stop
+        } catch {
+            Write-Host "Edge/Chrome not found, falling back to default browser." -ForegroundColor Yellow
+            Start-Process $url
+        }
+    }
+} else {
+    Write-Host "Starting TR-SAT Mission Control V3 at $url" -ForegroundColor Green
+    Start-Process $url
+}
 
 cd backend
 Write-Host "Starting FastAPI backend... Press Ctrl+C to stop." -ForegroundColor Cyan

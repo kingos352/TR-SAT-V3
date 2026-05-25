@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useConsoleStore } from '../../store/useConsoleStore';
+import { useTranslation } from '../../i18n/useTranslation';
 
 export const MissionReplayPanel: React.FC = () => {
   const {
@@ -18,6 +19,7 @@ export const MissionReplayPanel: React.FC = () => {
     setReplayCurrentUtc,
     requestReplayEphemeris
   } = useConsoleStore();
+  const { t } = useTranslation();
 
   const [followReplayObject, setFollowReplayObject] = useState(false);
   const [durationWindow, setDurationWindow] = useState<'90m' | '6h' | '24h'>('90m');
@@ -83,21 +85,18 @@ export const MissionReplayPanel: React.FC = () => {
   }, [replayIndex, replayEphemeris, replayPlaying]);
 
   return (
-    <details className="glass-panel" style={{ padding: '12px', borderRadius: '4px' }} open>
-      <summary style={{ cursor: 'pointer', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', fontWeight: 600 }}>
-        Mission Replay
-      </summary>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       
       <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {!activeObject ? (
         <div style={{ color: 'var(--text-muted)', fontSize: '10px', textAlign: 'center', padding: '10px 0' }}>
-          Select an active object to generate a replay.
+          {t('mission_replay.select_object')}
         </div>
       ) : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div>
-              <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Window</label>
+              <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>{t('mission_replay.window')}</label>
               <select
                 value={durationWindow}
                 onChange={(e) => setDurationWindow(e.target.value as '90m' | '6h' | '24h')}
@@ -114,7 +113,7 @@ export const MissionReplayPanel: React.FC = () => {
             </div>
             
             <div>
-              <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Step</label>
+              <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>{t('mission_replay.step')}</label>
               <select
                 value={stepSeconds}
                 onChange={(e) => setStepSeconds(parseInt(e.target.value) as 10 | 30 | 60)}
@@ -139,7 +138,7 @@ export const MissionReplayPanel: React.FC = () => {
               fontSize: '11px', fontWeight: 600, cursor: 'pointer', width: '100%'
             }}
           >
-            GENERATE REPLAY
+            {t('mission_replay.generate')}
           </button>
           
           {replayError && <div style={{ color: 'var(--status-error)', fontSize: '11px' }}>{replayError}</div>}
@@ -174,12 +173,12 @@ export const MissionReplayPanel: React.FC = () => {
                       backgroundColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--status-error)',
                       fontSize: '11px', cursor: 'pointer', fontWeight: 600, marginLeft: '4px'
                     }}>
-                    CLEAR
+                    {t('mission_replay.clear')}
                   </button>
                 </div>
                 
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Speed</label>
+                  <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t('mission_replay.speed')}</label>
                   <select
                     value={replaySpeed}
                     onChange={(e) => setReplaySpeed(Number(e.target.value))}
@@ -217,17 +216,17 @@ export const MissionReplayPanel: React.FC = () => {
                   onChange={(e) => setFollowReplayObject(e.target.checked)}
                   style={{ cursor: 'pointer' }}
                 />
-                Follow Replay Object
+                {t('mission_replay.follow_object')}
               </label>
 
               <p style={{ fontSize: '9px', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: '1.2' }}>
-                ⓘ Mission Replay uses precomputed TLE/GP-based SGP4 ephemeris. It is a visualization/replay mode, not direct spacecraft telemetry.
+                {t('mission_replay.warning')}
               </p>
             </div>
           )}
         </>
       )}
       </div>
-    </details>
+    </div>
   );
 };

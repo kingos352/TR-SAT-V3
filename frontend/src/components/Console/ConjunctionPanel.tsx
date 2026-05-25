@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { screenConjunction, ConjunctionScreenRequest } from '../../api/client';
+import { useTranslation } from '../../i18n/useTranslation';
 
 export const ConjunctionPanel: React.FC = () => {
   const { selectedObjects, activeObject, setConjunctionResults, conjunctionResults, setActiveConjunctionResult, addLog } = useConsoleStore();
+  const { t } = useTranslation();
   
   const [mode, setMode] = useState<'selected_vs_selected' | 'primary_vs_catalog'>('selected_vs_selected');
   const [horizonDays, setHorizonDays] = useState(3);
@@ -61,12 +63,7 @@ export const ConjunctionPanel: React.FC = () => {
   };
 
   return (
-    <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-bright)', margin: 0 }}>
-          Conjunction Screening
-        </h2>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       
       <details style={{
         fontSize: '10px',
@@ -77,10 +74,10 @@ export const ConjunctionPanel: React.FC = () => {
         padding: '6px 8px'
       }}>
         <summary style={{ cursor: 'pointer', outline: 'none', fontWeight: 600 }}>
-          ⓘ Geometric miss-distance screening — not collision probability.
+          {t('conjunction.warning_title')}
         </summary>
         <div style={{ marginTop: '6px', lineHeight: '1.4' }}>
-          <strong>Scientific note:</strong> Conjunction Screening uses TLE/GP-based SGP4 propagation and geometric miss-distance evaluation. It does not compute collision probability because public TLE/GP data does not include covariance.
+          {t('conjunction.warning_body')}
         </div>
       </details>
       
@@ -89,13 +86,13 @@ export const ConjunctionPanel: React.FC = () => {
           onClick={() => setSettingsOpen(!settingsOpen)}
           style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
         >
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Screening Parameters</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t('conjunction.parameters')}</span>
           <span style={{ color: 'var(--text-muted)' }}>{settingsOpen ? '▼' : '▶'}</span>
         </div>
         {settingsOpen && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', marginTop: '10px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ color: 'var(--text-muted)' }}>Mode</label>
+              <label style={{ color: 'var(--text-muted)' }}>{t('conjunction.mode')}</label>
               <select 
                 value={mode} 
                 onChange={e => setMode(e.target.value as any)}
@@ -107,13 +104,13 @@ export const ConjunctionPanel: React.FC = () => {
                   borderRadius: '4px' 
                 }}
               >
-                <option value="selected_vs_selected">Selected vs Selected</option>
-                <option value="primary_vs_catalog">Primary vs Catalog</option>
+                <option value="selected_vs_selected">{t('conjunction.mode_selected')}</option>
+                <option value="primary_vs_catalog">{t('conjunction.mode_catalog')}</option>
               </select>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ color: 'var(--text-muted)' }}>Horizon (Days)</label>
+              <label style={{ color: 'var(--text-muted)' }}>{t('conjunction.horizon')}</label>
               <input 
                 type="number" 
                 value={horizonDays} 
@@ -130,7 +127,7 @@ export const ConjunctionPanel: React.FC = () => {
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ color: 'var(--text-muted)' }}>Coarse Step (s)</label>
+              <label style={{ color: 'var(--text-muted)' }}>{t('conjunction.coarse_step')}</label>
               <input 
                 type="number" 
                 value={coarseStep} 
@@ -147,7 +144,7 @@ export const ConjunctionPanel: React.FC = () => {
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ color: 'var(--text-muted)' }}>Refine Step (s)</label>
+              <label style={{ color: 'var(--text-muted)' }}>{t('conjunction.refine_step')}</label>
               <input 
                 type="number" 
                 value={refineStep} 
@@ -182,13 +179,13 @@ export const ConjunctionPanel: React.FC = () => {
           marginTop: '4px'
         }}
       >
-        {loading ? 'Screening...' : 'Run Screen'}
+        {loading ? t('conjunction.screening') : t('conjunction.run_screen')}
       </button>
 
       {conjunctionResults.length > 0 && (
         <div style={{ marginTop: '8px', maxHeight: '180px', overflowY: 'auto' }}>
           <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '4px' }}>
-            Results ({conjunctionResults.length})
+            {t('conjunction.results')} ({conjunctionResults.length})
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {conjunctionResults.map((res, idx) => {
@@ -220,9 +217,9 @@ export const ConjunctionPanel: React.FC = () => {
                     <span>{res.severity}</span>
                     <span>{res.miss_distance_km.toFixed(2)} km</span>
                   </div>
-                  <div style={{ color: 'var(--text-bright)' }}>TCA: {res.tca_time.replace('T', ' ').substring(0, 19)}</div>
+                  <div style={{ color: 'var(--text-bright)' }}>{t('conjunction.tca')} {res.tca_time.replace('T', ' ').substring(0, 19)}</div>
                   <div style={{ color: 'var(--text-muted)' }}>P: {res.primary_norad_id} | S: {res.secondary_norad_id}</div>
-                  <div style={{ color: 'var(--text-muted)' }}>Rel. Speed ~ {(relSpeed).toFixed(2)} km/s</div>
+                  <div style={{ color: 'var(--text-muted)' }}>{t('conjunction.rel_speed')} {(relSpeed).toFixed(2)} km/s</div>
                 </div>
               );
             })}

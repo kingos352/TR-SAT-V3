@@ -1,5 +1,5 @@
 import { CatalogObject, SatelliteState, PassWindow, ConjunctionResult, CatalogSnapshotObject } from '../api/client';
-
+import { useConsoleStore } from '../store/useConsoleStore';
 // Helper to trigger file download
 function downloadFile(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -239,7 +239,23 @@ export function exportMissionReport(
       md += `- **Enlem:** ${activeState.latitude_deg.toFixed(4)}°\n`;
       md += `- **Boylam:** ${activeState.longitude_deg.toFixed(4)}°\n`;
       md += `- **İrtifa:** ${activeState.altitude_km.toFixed(2)} km\n`;
+      if (activeState.tle_epoch_utc) {
+        md += `- **TLE Epok:** ${activeState.tle_epoch_utc}\n`;
+      }
+      if (activeState.tle_age_days !== undefined) {
+        md += `- **TLE Yaşı:** ${activeState.tle_age_days.toFixed(2)} gün\n`;
+      }
       md += `- **Güvenilirlik:** ${activeState.reliability_status}\n\n`;
+      
+      const storeState = useConsoleStore.getState();
+      if (storeState.illuminationState) {
+        md += `- **Aydınlatma (Gölge) Durumu:** ${storeState.illuminationState}\n`;
+      }
+      if (storeState.decayIndicators) {
+        md += `- **Heuristic MM Trend:** ${storeState.decayIndicators.mean_motion_trend?.toFixed(6) || 'N/A'}\n`;
+        md += `- **Heuristic Alt Trend:** ${storeState.decayIndicators.altitude_trend_km?.toFixed(3) || 'N/A'} km\n`;
+      }
+      md += `\n*Not: TLE/GP tabanlı propagasyon doğruluğu yörünge elemanlarının yaşlanmasıyla azalır. Illumination state is an approximate geometric sunlight/shadow estimate..*\n\n`;
     } else {
       md += `*Propagasyon durumu mevcut değil.*\n\n`;
     }
@@ -289,6 +305,12 @@ export function exportMissionReport(
       md += `- **Latitude:** ${activeState.latitude_deg.toFixed(4)}°\n`;
       md += `- **Longitude:** ${activeState.longitude_deg.toFixed(4)}°\n`;
       md += `- **Altitude:** ${activeState.altitude_km.toFixed(2)} km\n`;
+      if (activeState.tle_epoch_utc) {
+        md += `- **TLE Epoch:** ${activeState.tle_epoch_utc}\n`;
+      }
+      if (activeState.tle_age_days !== undefined) {
+        md += `- **TLE Age:** ${activeState.tle_age_days.toFixed(2)} days\n`;
+      }
       md += `- **Reliability:** ${activeState.reliability_status}\n\n`;
     } else {
       md += `*Propagation state not available.*\n\n`;

@@ -12,7 +12,11 @@ import {
   SceneTransforms,
   PointPrimitiveCollection,
   ScreenSpaceEventHandler,
-  ScreenSpaceEventType
+  ScreenSpaceEventType,
+  Camera,
+  Rectangle,
+  createWorldTerrainAsync,
+  HeightReference
 } from 'cesium';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { cartesianFromGeodetic, groundTrackCartesian } from '../../utils/cesiumCoordinates';
@@ -43,7 +47,8 @@ export const CesiumViewer: React.FC = () => {
     enableEarthRotation,
     replayEnabled,
     replayIndex,
-    replayEphemeris
+    replayEphemeris,
+    setCesiumDiagnostics
   } = useConsoleStore();
 
   const pointsRef = useRef<PointPrimitiveCollection | null>(null);
@@ -60,6 +65,15 @@ export const CesiumViewer: React.FC = () => {
     }
 
     if (containerRef.current && !viewerRef.current) {
+      if (observer) {
+        Camera.DEFAULT_VIEW_RECTANGLE = Rectangle.fromDegrees(
+          observer.longitude_deg - 15,
+          observer.latitude_deg - 15,
+          observer.longitude_deg + 15,
+          observer.latitude_deg + 15
+        );
+      }
+
       try {
         const viewer = new Viewer(containerRef.current, {
           animation: false,
@@ -77,8 +91,28 @@ export const CesiumViewer: React.FC = () => {
 
         // Optimize baseline rendering
         viewer.scene.globe.enableLighting = false;
+        viewer.scene.postProcessStages.fxaa.enabled = true;
+        viewer.resolutionScale = 1.0;
+        
         viewerRef.current = viewer;
         addLog('System: 3D Visualization engine mounted.');
+
+        if (token && token.trim().length > 0) {
+          setCesiumDiagnostics({ token: 'Configured', terrain: 'Checking...', imagery: 'Checking...' });
+          (async () => {
+            try {
+              if (createWorldTerrainAsync) {
+                viewer.terrainProvider = await createWorldTerrainAsync();
+                viewer.scene.globe.depthTestAgainstTerrain = true;
+                setCesiumDiagnostics({ token: 'Configured', terrain: 'Ion Terrain', imagery: 'Ion Imagery' });
+              }
+            } catch (err) {
+              console.warn('Cesium ion imagery/terrain unavailable. Using fallback globe.', err);
+              addLog('Warning: Cesium ion imagery/terrain unavailable. Using fallback globe.');
+              setCesiumDiagnostics({ token: 'Configured', terrain: 'Failed', imagery: 'Fallback' });
+            }
+          })();
+        }
       } catch (err) {
         console.error('Failed to initialize Cesium Viewer:', err);
         addLog('CRITICAL: Failed to mount 3D Visualization engine.');
@@ -109,6 +143,14 @@ export const CesiumViewer: React.FC = () => {
     
     if (showObserver && observer) {
       try {
+        // Update Cesium Default Home View to point to the Ground Station
+        Camera.DEFAULT_VIEW_RECTANGLE = Rectangle.fromDegrees(
+          observer.longitude_deg - 15, // West
+          observer.latitude_deg - 15,  // South
+          observer.longitude_deg + 15, // East
+          observer.latitude_deg + 15   // North
+        );
+
         const obsPos = Cartesian3.fromDegrees(
           observer.longitude_deg,
           observer.latitude_deg,
@@ -129,16 +171,19 @@ export const CesiumViewer: React.FC = () => {
               color: Color.BLUE,
               outlineColor: Color.WHITE,
               outlineWidth: 1.5,
+              heightReference: HeightReference.CLAMP_TO_GROUND
             },
             label: {
               text: observer.name,
-              font: '11px Share Tech Mono, sans-serif',
+              font: '24px Share Tech Mono, sans-serif',
+              scale: 0.5,
               fillColor: Color.WHITE,
               outlineColor: Color.BLACK,
               outlineWidth: 2,
               style: LabelStyle.FILL_AND_OUTLINE,
               verticalOrigin: VerticalOrigin.BOTTOM,
-              pixelOffset: new Cartesian2(0, -9)
+              pixelOffset: new Cartesian2(0, -9),
+              heightReference: HeightReference.CLAMP_TO_GROUND
             }
           });
         }
@@ -611,7 +656,6 @@ export const CesiumViewer: React.FC = () => {
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { getCatalogSnapshot, CatalogSnapshotObject, CatalogObject } from '../../api/client';
+import { useTranslation } from '../../i18n/useTranslation';
 
 export const CatalogLayerPanel: React.FC = () => {
   const {
@@ -13,6 +14,7 @@ export const CatalogLayerPanel: React.FC = () => {
     setActiveObject,
     addLog,
   } = useConsoleStore();
+  const { t } = useTranslation();
 
   const [limit, setLimit] = useState<number>(1000);
   const [objectType, setObjectType] = useState<string>('ALL');
@@ -64,12 +66,7 @@ export const CatalogLayerPanel: React.FC = () => {
   };
 
   return (
-    <details className="glass-panel" style={{ padding: '12px', borderRadius: '4px' }}>
-      <summary style={{ cursor: 'pointer', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', fontWeight: 600 }}>
-        All-Catalog Visualization
-      </summary>
-      
-      <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{
           backgroundColor: 'rgba(234, 179, 8, 0.1)',
           border: '1px solid var(--accent-orange)',
@@ -80,17 +77,17 @@ export const CatalogLayerPanel: React.FC = () => {
           fontWeight: 600,
           lineHeight: '1.4'
         }}>
-          ⚠️ Catalog visualization uses filtered TLE/GP-based SGP4 position snapshots. It is optimized for situational awareness and is not direct spacecraft telemetry.
+          {t('catalog_layer.warning_snapshot')}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Search Query</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>{t('catalog_layer.search_query')}</label>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Name or NORAD..."
+              placeholder={t('catalog_layer.search_placeholder')}
               style={{
                 width: '100%', padding: '6px', borderRadius: '6px',
                 backgroundColor: 'rgba(3, 7, 18, 0.7)', border: '1px solid var(--border-color)',
@@ -99,7 +96,7 @@ export const CatalogLayerPanel: React.FC = () => {
             />
           </div>
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Object Type</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>{t('catalog_layer.object_type')}</label>
             <select
               value={objectType}
               onChange={(e) => setObjectType(e.target.value)}
@@ -113,7 +110,7 @@ export const CatalogLayerPanel: React.FC = () => {
             </select>
           </div>
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Category</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>{t('catalog_layer.category')}</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -127,7 +124,7 @@ export const CatalogLayerPanel: React.FC = () => {
             </select>
           </div>
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Limit</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>{t('catalog_layer.limit')}</label>
             <select
               value={limit}
               onChange={(e) => setLimit(parseInt(e.target.value, 10))}
@@ -153,7 +150,7 @@ export const CatalogLayerPanel: React.FC = () => {
               opacity: catalogLayerLoading ? 0.7 : 1
             }}
           >
-            {catalogLayerObjects.length > 0 ? 'Refresh Snapshot' : 'Load Snapshot'}
+            {catalogLayerObjects.length > 0 ? t('catalog_layer.refresh_snapshot') : t('catalog_layer.load_snapshot')}
           </button>
           <button
             onClick={handleClear}
@@ -163,7 +160,7 @@ export const CatalogLayerPanel: React.FC = () => {
               fontSize: '11px', fontWeight: 600, cursor: 'pointer'
             }}
           >
-            Clear
+            {t('catalog_layer.clear')}
           </button>
         </div>
 
@@ -171,7 +168,7 @@ export const CatalogLayerPanel: React.FC = () => {
           <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <h3 style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>
-                Loaded Objects ({catalogLayerObjects.length})
+                {t('catalog_layer.loaded_objects')} ({catalogLayerObjects.length})
               </h3>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', color: 'var(--text-bright)', cursor: 'pointer' }}>
                 <input 
@@ -180,7 +177,7 @@ export const CatalogLayerPanel: React.FC = () => {
                   onChange={(e) => setCatalogLayerEnabled(e.target.checked)} 
                   style={{ cursor: 'pointer' }}
                 />
-                Show on Globe
+                {t('catalog_layer.show_on_globe')}
               </label>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '150px', overflowY: 'auto' }}>
@@ -209,14 +206,13 @@ export const CatalogLayerPanel: React.FC = () => {
                       fontSize: '9px', cursor: 'pointer'
                     }}
                   >
-                    Focus
+                    {t('catalog_layer.focus')}
                   </button>
                 </div>
               ))}
             </div>
           </div>
         )}
-      </div>
-    </details>
+    </div>
   );
 };

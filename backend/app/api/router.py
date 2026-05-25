@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import health, catalog, propagation, observer, telemetry, spacetrack, conjunction, catalog_visualization, visibility, assistant, analytics
+from app.api.endpoints import health, catalog, propagation, observer, telemetry, spacetrack, conjunction, catalog_visualization, visibility, assistant, analytics, research, advanced_research
 
 api_router = APIRouter()
 api_router.include_router(health.router, prefix="/health", tags=["system"])
@@ -13,3 +13,5 @@ api_router.include_router(catalog_visualization.router, prefix="/catalog-visuali
 api_router.include_router(visibility.router, prefix="/visibility", tags=["visibility"])
 api_router.include_router(assistant.router, prefix="/assistant", tags=["assistant"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+api_router.include_router(research.router, prefix="/research", tags=["research"])
+api_router.include_router(advanced_research.router, prefix="/advanced-research", tags=["advanced-research"])

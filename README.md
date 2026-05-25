@@ -15,6 +15,8 @@ Powered by TLE/GP-based SGP4 propagation and a CesiumJS 3D mission view, TR-SAT 
 *   **Client-Side Export System**: Zero-latency exports of Ephemeris (CSV), Trajectories (CZML), Ground Tracks (GeoJSON), and Mission Reports.
 *   **Mission Knowledge Assistant (AI)**: An integrated LLM agent for answering domain-specific orbital mechanics questions, built with a secure proxy architecture and strict guardrails.
 *   **Space Environment Dashboard**: Analytical tool summarizing local RSO catalog by orbital regime, altitude, inclination, source, object type, and TLE staleness metrics. Note: Regime classification relies on approximate derived characteristics and is meant for situational awareness, not certified operational SSA.
+*   **Phase 20 Research Mode**: Specialized endpoints and analytics for catalog-wide TLE reliability and age tracking.
+*   **Phase 21 Advanced Research & SSA Suite**: Advanced historical TLE evolution, heuristic decay indicators, approximate geometric illumination awareness, and relative motion analysis.
 *   **Local-First Architecture**: Powered by a local SQLite persistence layer for TLE ingestion, ensuring fast, offline-capable analysis.
 
 > [!WARNING]
@@ -59,6 +61,8 @@ The easiest way to run TR-SAT Mission Control V3 is using the provided one-click
    Double-click `TR-SAT-Build.bat`. This script will automatically set up your `.env` file, install Python and Node dependencies, and build the React frontend.
 2. **Start the Application**:
    Double-click `TR-SAT-Start.bat`. This will start the FastAPI backend on port 8000 (serving the built frontend) and automatically open your browser at `http://127.0.0.1:8000`.
+3. **App Window Mode (Optional)**:
+   Double-click `TR-SAT-App.bat` to open the application in a standalone desktop-like window without browser tabs or an address bar (requires Microsoft Edge or Google Chrome).
 
 ### Manual Development Mode
 If you prefer running the separate dev servers:
@@ -117,6 +121,17 @@ TR-SAT Mission Control adheres to strict scientific terminology regarding its ca
 *   **Visibility Conditions**: This is elevation-based geometric visibility. It does not guarantee optical brightness or naked-eye visibility, which depend on illumination, weather, and local sky conditions.
 *   **Not Certified Ephemeris**: CZML exports and ephemeris outputs are intended for visualization and situational awareness, not as certified operational ephemeris for mission command.
 *   **AI Guardrails**: The Mission Knowledge Assistant is informational only; it refuses to provide operational commands or simulate direct operational telemetry.
+
+---
+
+## ⚙️ Configuration
+
+### Cesium Ion (Visual Quality)
+TR-SAT Mission Control uses a fallback offline-capable 3D globe by default. To enable high-resolution terrain and satellite imagery:
+1. Obtain a free [Cesium Ion](https://cesium.com/ion/) token.
+2. Place the token in `frontend/.env` as `VITE_CESIUM_ION_TOKEN="your_token_here"`.
+3. The visual quality improvement depends on the selected imagery/terrain provider linked to your Ion account.
+4. **Important**: Do not commit your `.env` file to version control.
 
 ---
 

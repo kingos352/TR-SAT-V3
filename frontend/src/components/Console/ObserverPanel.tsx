@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { getCatalogAER, getCatalogPasses } from '../../api/client';
+import { useTranslation } from '../../i18n/useTranslation';
 
 export const ObserverPanel: React.FC = () => {
   const {
@@ -14,6 +15,7 @@ export const ObserverPanel: React.FC = () => {
     addLog,
     setApiStatus
   } = useConsoleStore();
+  const { t } = useTranslation();
 
   // Form states initialized from Zustand
   const [stationName, setStationName] = useState(observer.name);
@@ -95,9 +97,7 @@ export const ObserverPanel: React.FC = () => {
   };
 
   return (
-    <section className="glass-panel" style={{
-      padding: '16px',
-      borderRadius: '8px',
+    <div style={{
       display: 'flex',
       flexDirection: 'column',
       gap: '16px'
@@ -109,9 +109,9 @@ export const ObserverPanel: React.FC = () => {
           onClick={() => setSettingsOpen(!settingsOpen)}
           style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
         >
-          <h2 style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', margin: 0 }}>
-            Ground Station Coordinates
-          </h2>
+          <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)' }}>
+            {t('observer.station_coordinate_input')}
+          </span>
           <span style={{ color: 'var(--text-muted)' }}>{settingsOpen ? '▼' : '▶'}</span>
         </div>
         
@@ -119,7 +119,7 @@ export const ObserverPanel: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
             <input
               type="text"
-              placeholder="Station Name"
+              placeholder={t('observer.station_name')}
               value={stationName}
               onChange={(e) => setStationName(e.target.value)}
               style={{
@@ -135,7 +135,7 @@ export const ObserverPanel: React.FC = () => {
             />
             <div style={{ display: 'flex', gap: '8px' }}>
               <div>
-                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Lat (°N)</label>
+                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>{t('observer.lat')}</label>
                 <input
                   type="number"
                   step="0.0001"
@@ -154,7 +154,7 @@ export const ObserverPanel: React.FC = () => {
                 />
               </div>
               <div>
-                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Lon (°E)</label>
+                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>{t('observer.lon')}</label>
                 <input
                   type="number"
                   step="0.0001"
@@ -173,7 +173,7 @@ export const ObserverPanel: React.FC = () => {
                 />
               </div>
               <div>
-                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Elev (m)</label>
+                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>{t('observer.elev')}</label>
                 <input
                   type="number"
                   value={elev}
@@ -191,7 +191,7 @@ export const ObserverPanel: React.FC = () => {
                 />
               </div>
               <div>
-                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>Mask (°)</label>
+                <label style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block' }}>{t('observer.mask')}</label>
                 <input
                   type="number"
                   value={minEl}
@@ -231,7 +231,7 @@ export const ObserverPanel: React.FC = () => {
             transition: 'all 0.2s'
           }}
         >
-          {aerLoading ? 'Computing...' : 'Compute AER'}
+          {aerLoading ? t('observer.computing') : t('observer.compute_aer')}
         </button>
         <button
           onClick={handlePredictPasses}
@@ -249,7 +249,7 @@ export const ObserverPanel: React.FC = () => {
             transition: 'background-color 0.2s'
           }}
         >
-          {passesLoading ? 'Predicting...' : 'Predict Passes'}
+          {passesLoading ? t('observer.predicting') : t('observer.predict_passes')}
         </button>
       </div>
 
@@ -262,12 +262,12 @@ export const ObserverPanel: React.FC = () => {
           padding: '10px 12px'
         }}>
           <h3 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}>
-            Topocentric Horizon Coordinates (AER)
+            {t('observer.topocentric_horizon_coordinates')}
           </h3>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-            <div>Azimuth: <strong className="mono-text" style={{ color: 'var(--text-bright)' }}>{activeAER.azimuth_deg.toFixed(2)}°</strong></div>
-            <div>Elevation: <strong className="mono-text" style={{ color: 'var(--text-bright)' }}>{activeAER.elevation_deg.toFixed(2)}°</strong></div>
-            <div>Range: <strong className="mono-text" style={{ color: 'var(--text-bright)' }}>{activeAER.range_km.toFixed(1)} km</strong></div>
+            <div>{t('observer.azimuth')} <strong className="mono-text" style={{ color: 'var(--text-bright)' }}>{activeAER.azimuth_deg.toFixed(2)}°</strong></div>
+            <div>{t('observer.elevation')} <strong className="mono-text" style={{ color: 'var(--text-bright)' }}>{activeAER.elevation_deg.toFixed(2)}°</strong></div>
+            <div>{t('observer.range')} <strong className="mono-text" style={{ color: 'var(--text-bright)' }}>{activeAER.range_km.toFixed(1)} km</strong></div>
           </div>
         </div>
       )}
@@ -276,17 +276,17 @@ export const ObserverPanel: React.FC = () => {
       {activePasses.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <h3 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-            Visible Pass Predictor (Next 24h)
+            {t('observer.visible_pass_predictor')}
           </h3>
           <div style={{ overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '6px' }}>AOS (UTC)</th>
-                  <th style={{ padding: '6px' }}>MAX (UTC)</th>
-                  <th style={{ padding: '6px' }}>LOS (UTC)</th>
-                  <th style={{ padding: '6px' }}>Max El</th>
-                  <th style={{ padding: '6px' }}>Range (km)</th>
+                  <th style={{ padding: '6px' }}>{t('observer.aos')}</th>
+                  <th style={{ padding: '6px' }}>{t('observer.max')}</th>
+                  <th style={{ padding: '6px' }}>{t('observer.los')}</th>
+                  <th style={{ padding: '6px' }}>{t('observer.max_el')}</th>
+                  <th style={{ padding: '6px' }}>{t('observer.range_km')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -305,6 +305,6 @@ export const ObserverPanel: React.FC = () => {
         </div>
       )}
 
-    </section>
+    </div>
   );
 };

@@ -147,6 +147,42 @@ export interface ConjunctionScreenResponse {
   computation_time_ms: number;
 }
 
+// --- ADVANCED RESEARCH ---
+export interface HistoricalTLEPoint {
+  epoch: string;
+  inclination: number;
+  raan: number;
+  eccentricity: number;
+  arg_perigee: number;
+  mean_anomaly: number;
+  mean_motion: number;
+  bstar: number;
+}
+
+export interface OrbitalDecayIndicators {
+  mean_motion_trend: number | null;
+  bstar_trend: number | null;
+  altitude_trend_km: number | null;
+  note: string;
+}
+
+export interface IlluminationStateResponse {
+  illumination_state: 'SUNLIT' | 'EARTH_SHADOW' | 'UNKNOWN';
+}
+
+export interface RelativeMotionPoint {
+  timestamp_utc: string;
+  distance_km: number;
+}
+
+export interface RelativeMotionResult {
+  primary_id: number;
+  secondary_id: number;
+  tca_utc: string;
+  relative_speed_kmps: number;
+  distance_curve: RelativeMotionPoint[];
+}
+
 // --- VISIBILITY ---
 
 export interface VisibilityScreenRequest {
@@ -433,12 +469,15 @@ export async function screenVisibility(payload: VisibilityScreenRequest): Promis
 export interface AssistantChatRequest {
   message: string;
   context?: any;
+  language?: string;
 }
 
 export interface AssistantChatResponse {
-  reply: string;
+  answer: string;
+  provider: string;
+  model: string;
   mode: string;
-  context_used?: any;
+  warnings: string[];
 }
 
 export async function sendAssistantMessage(payload: AssistantChatRequest): Promise<AssistantChatResponse> {
@@ -479,6 +518,26 @@ export interface CatalogAnalyticsSummary {
   disclaimer: string;
 }
 
+export interface ReliabilitySummary {
+  overall_freshness_score: number;
+  total_objects: number;
+  fresh_count: number;
+  aging_count: number;
+  stale_count: number;
+  unknown_count: number;
+  average_age_days: number;
+  median_age_days: number;
+  age_histogram: { label: string; count: number; }[];
+}
+
+export interface ObjectReliabilityDetail {
+  norad_id: number;
+  tle_epoch_utc: string;
+  tle_age_days: number;
+  reliability_label: 'FRESH' | 'AGING' | 'STALE' | 'UNKNOWN';
+  warnings: string[];
+}
+
 export async function getCatalogAnalyticsSummary(filters?: {
   source?: string;
   source_group?: string;
@@ -498,4 +557,86 @@ export async function getCatalogAnalyticsSummary(filters?: {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
   return res.json();
+}
+
+export async function getReliabilitySummary(): Promise<ReliabilitySummary> {
+  return apiRequest<ReliabilitySummary>(`${API_BASE_URL}/api/v1/analytics/reliability/summary`);
+}
+
+export async function getObjectReliability(noradId: number): Promise<ObjectReliabilityDetail> {
+  return apiRequest<ObjectReliabilityDetail>(`${API_BASE_URL}/api/v1/analytics/reliability/${noradId}`);
+}
+
+// --- RESEARCH ---
+export interface TLEHistoryResponse {
+  norad_id: number;
+  history: TLERead[];
+}
+
+export interface IlluminationRequest {
+  norad_id: number;
+  timestamp_utc: string;
+}
+
+export interface IlluminationResponse {
+  norad_id: number;
+  timestamp_utc: string;
+  illumination_state: "SUNLIT" | "EARTH_SHADOW" | "UNKNOWN";
+}
+
+export interface RelativeMotionRequest {
+  primary_norad_id: number;
+  secondary_norad_id: number;
+  start_time_utc: string;
+  end_time_utc: string;
+  step_seconds: number;
+}
+
+export interface RelativeMotionPoint {
+  timestamp_utc: string;
+  distance_km: number;
+  relative_speed_km_per_s: number;
+}
+
+export interface RelativeMotionResponse {
+  primary_norad_id: number;
+  secondary_norad_id: number;
+  motion_profile: RelativeMotionPoint[];
+}
+
+export async function getTLEHistory(noradId: number): Promise<TLEHistoryResponse> {
+  return apiRequest<TLEHistoryResponse>(`${API_BASE_URL}/api/v1/research/tle-history/${noradId}`);
+}
+
+export async function getIllumination(payload: IlluminationRequest): Promise<IlluminationResponse> {
+  return apiRequest<IlluminationResponse>(`${API_BASE_URL}/api/v1/research/illumination`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getRelativeMotion(payload: RelativeMotionRequest): Promise<RelativeMotionResponse> {
+  return apiRequest<RelativeMotionResponse>(`${API_BASE_URL}/api/v1/research/relative-motion`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+// --- NEW ADVANCED RESEARCH FUNCS ---
+export async function getHistoricalTLEs(noradId: number): Promise<HistoricalTLEPoint[]> {
+  return apiRequest<HistoricalTLEPoint[]>(`${API_BASE_URL}/api/v1/advanced-research/historical/${noradId}`);
+}
+
+export async function getDecayIndicators(noradId: number): Promise<OrbitalDecayIndicators> {
+  return apiRequest<OrbitalDecayIndicators>(`${API_BASE_URL}/api/v1/advanced-research/decay-indicators/${noradId}`);
+}
+
+export async function getAdvancedIllumination(noradId: number, tUtc: string): Promise<IlluminationStateResponse> {
+  return apiRequest<IlluminationStateResponse>(`${API_BASE_URL}/api/v1/advanced-research/illumination/${noradId}?t_utc=${encodeURIComponent(tUtc)}`);
+}
+
+export async function getAdvancedRelativeMotion(primaryId: number, secondaryId: number, tcaUtc: string): Promise<RelativeMotionResult> {
+  return apiRequest<RelativeMotionResult>(`${API_BASE_URL}/api/v1/advanced-research/relative-motion?primary_id=${primaryId}&secondary_id=${secondaryId}&tca_utc=${encodeURIComponent(tcaUtc)}`);
 }

@@ -101,3 +101,33 @@ def get_catalog_passes(req: CatalogPassPredictionRequest, db: Session = Depends(
             status_code=400,
             detail=f"Pass prediction failed: {str(e)}"
         )
+
+from app.schemas.physics import CatalogDetailedPassRequest, DetailedPassWindow
+from app.services.pass_predictor import compute_detailed_passes_from_tle
+
+@router.post("/catalog/passes/detail", response_model=List[DetailedPassWindow])
+def get_detailed_catalog_passes(req: CatalogDetailedPassRequest, db: Session = Depends(get_db)):
+    """
+    Predict detailed ground station visibility pass windows using database-backed TLE,
+    including elevation profiles and quality labels.
+    """
+    lookup = get_catalog_object_with_latest_tle(db, req.norad_id)
+    if not lookup:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Resident Space Object with NORAD ID {req.norad_id} not found or lacks TLE data."
+        )
+        
+    rso, tle = lookup
+    try:
+        detailed_passes = compute_detailed_passes_from_tle(
+            rso.name, tle.line1, tle.line2,
+            req.observer_latitude_deg, req.observer_longitude_deg, req.observer_elevation_m,
+            req.start_time_utc, req.end_time_utc, req.min_elevation_deg, req.profile_step_seconds
+        )
+        return detailed_passes
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Detailed pass prediction failed: {str(e)}"
+        )

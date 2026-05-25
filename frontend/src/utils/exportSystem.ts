@@ -63,6 +63,28 @@ export function exportConjunctionsCSV(results: ConjunctionResult[]) {
   downloadFile(csvContent, `trsat_conjunction_screening.csv`, 'text/csv');
 }
 
+export function exportDetailedPassesCSV(passes: import('../api/client').DetailedPassWindow[], noradId: number) {
+  if (!passes || passes.length === 0) return;
+  
+  const headers = ['aos_time_utc', 'max_time_utc', 'los_time_utc', 'duration_seconds', 'max_elevation_deg', 'azimuth_aos_deg', 'azimuth_max_deg', 'azimuth_los_deg', 'range_at_max_km', 'quality_label'];
+  
+  const rows = passes.map(p => [
+    p.aos_time_utc,
+    p.max_time_utc,
+    p.los_time_utc,
+    p.duration_seconds.toFixed(1),
+    p.max_elevation_deg.toFixed(2),
+    p.azimuth_aos_deg?.toFixed(2) || '',
+    p.azimuth_max_deg?.toFixed(2) || '',
+    p.azimuth_los_deg?.toFixed(2) || '',
+    p.range_at_max_km?.toFixed(2) || '',
+    p.quality_label
+  ].join(','));
+  
+  const csvContent = [headers.join(','), ...rows].join('\n');
+  downloadFile(csvContent, `trsat_detailed_passes_${noradId}.csv`, 'text/csv');
+}
+
 export function exportCatalogCSV(catalog: CatalogSnapshotObject[]) {
   if (!catalog || catalog.length === 0) return;
   const headers = ['norad_id', 'name', 'object_type', 'category', 'latitude_deg', 'longitude_deg', 'altitude_km'];

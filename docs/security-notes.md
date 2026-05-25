@@ -19,3 +19,8 @@ As of Phase 13 (Release Candidate Hardening), a comprehensive security audit has
 ## 4. Codebase Audit Results
 - Automated `grep` searches confirmed that no default passwords, hardcoded credentials, or leaked tokens exist in the source code or test files.
 - Test suites mock credential availability without requiring or leaking real keys.
+
+## 5. Mission Knowledge Assistant (AI)
+- **Proxy Architecture**: The Gemini AI API key (`AI_PROVIDER_KEY`) is securely managed by the FastAPI backend. The frontend communicates with the AI strictly through backend proxy endpoints, ensuring that API keys are never exposed to the client.
+- **Informational Only**: The assistant operates in a strict read-only, informational mode. It does not have access to operational commands, and it cannot control or modify the system state or satellite telemetry.
+- **Scientific Wording Constraints**: The assistant is implemented with guardrails to refuse questions attempting to elicit direct telemetry outputs (e.g. raw sensor data streams) or operational collision probabilities, ensuring answers remain strictly within scientific and educational boundaries.

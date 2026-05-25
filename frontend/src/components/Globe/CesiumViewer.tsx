@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { 
   Viewer, 
   Ion, 
@@ -9,7 +9,10 @@ import {
   VerticalOrigin, 
   ArcType,
   HeadingPitchRange,
-  PointPrimitiveCollection
+  SceneTransforms,
+  PointPrimitiveCollection,
+  ScreenSpaceEventHandler,
+  ScreenSpaceEventType
 } from 'cesium';
 import { useConsoleStore } from '../../store/useConsoleStore';
 import { cartesianFromGeodetic, groundTrackCartesian } from '../../utils/cesiumCoordinates';
@@ -29,10 +32,6 @@ export const CesiumViewer: React.FC = () => {
     showGroundTrack,
     showObserver,
     followActiveObject,
-    setShowOrbitPath,
-    setShowGroundTrack,
-    setShowObserver,
-    setFollowActiveObject,
     addLog,
     liveObjectStates,
     liveTrackingEnabled,
@@ -42,8 +41,9 @@ export const CesiumViewer: React.FC = () => {
     catalogLayerObjects,
     enableEarthLighting,
     enableEarthRotation,
-    setEnableEarthLighting,
-    setEnableEarthRotation
+    replayEnabled,
+    replayIndex,
+    replayEphemeris
   } = useConsoleStore();
 
   const pointsRef = useRef<PointPrimitiveCollection | null>(null);
@@ -161,17 +161,18 @@ export const CesiumViewer: React.FC = () => {
     if (!viewer) return;
 
     if (followActiveObject && activeObject) {
-      const satId = `live-object-${activeObject.norad_id}`;
-      const satEntity = viewer.entities.getById(satId);
-      if (satEntity && viewer.trackedEntity !== satEntity) {
-        viewer.trackedEntity = satEntity;
+      const isReplay = replayEnabled && replayEphemeris && replayEphemeris.length > 0;
+      const targetId = isReplay ? 'replay-satellite' : `live-object-${activeObject.norad_id}`;
+      const targetEntity = viewer.entities.getById(targetId);
+      if (targetEntity && viewer.trackedEntity !== targetEntity) {
+        viewer.trackedEntity = targetEntity;
       }
     } else {
       if (viewer.trackedEntity) {
         viewer.trackedEntity = undefined;
       }
     }
-  }, [followActiveObject, activeObject, activeState]);
+  }, [followActiveObject, activeObject, activeState, replayEnabled, replayEphemeris]);
 
   // --- 2.8 Earth Lighting & Rotation Controls ---
   useEffect(() => {
@@ -293,21 +294,26 @@ export const CesiumViewer: React.FC = () => {
           state.altitude_km
         );
 
+        const isReplayMode = isActive && replayEnabled && replayEphemeris && replayEphemeris.length > 0;
+        const alpha = isReplayMode ? 0.3 : 1.0;
+
         if (existing) {
           existing.position = pos as any;
           if (existing.label) {
             existing.label.text = (isActive ? `${obj.name} (NORAD: ${obj.norad_id})` : isConjunctionTarget ? `[CONJ] ${obj.name}` : obj.name) as any;
             existing.label.font = (isActive ? '12px Share Tech Mono, sans-serif' : '9px Share Tech Mono, sans-serif') as any;
             if (isConjunctionTarget && !isActive) {
-               existing.label.fillColor = isPrimary ? Color.CYAN : Color.MAGENTA as any;
+               existing.label.fillColor = isPrimary ? Color.CYAN.withAlpha(alpha) : Color.MAGENTA.withAlpha(alpha) as any;
             } else {
-               existing.label.fillColor = Color.WHITE as any;
+               existing.label.fillColor = Color.WHITE.withAlpha(alpha) as any;
             }
+            existing.label.outlineColor = Color.BLACK.withAlpha(alpha) as any;
           }
           if (existing.point) {
-            existing.point.color = (isActive ? Color.RED : isPrimary ? Color.CYAN : isSecondary ? Color.MAGENTA : Color.ORANGE) as any;
+            existing.point.color = (isActive ? Color.RED.withAlpha(alpha) : isPrimary ? Color.CYAN.withAlpha(alpha) : isSecondary ? Color.MAGENTA.withAlpha(alpha) : Color.ORANGE.withAlpha(alpha)) as any;
             existing.point.pixelSize = (isActive ? 12 : isConjunctionTarget ? 10 : 8) as any;
             existing.point.outlineWidth = (isActive ? 2 : 1.0) as any;
+            existing.point.outlineColor = Color.WHITE.withAlpha(alpha) as any;
           }
         } else {
           try {
@@ -316,15 +322,15 @@ export const CesiumViewer: React.FC = () => {
               position: pos,
               point: {
                 pixelSize: isActive ? 12 : isConjunctionTarget ? 10 : 8,
-                color: isActive ? Color.RED : isPrimary ? Color.CYAN : isSecondary ? Color.MAGENTA : Color.ORANGE,
-                outlineColor: Color.WHITE,
+                color: isActive ? Color.RED.withAlpha(alpha) : isPrimary ? Color.CYAN.withAlpha(alpha) : isSecondary ? Color.MAGENTA.withAlpha(alpha) : Color.ORANGE.withAlpha(alpha),
+                outlineColor: Color.WHITE.withAlpha(alpha),
                 outlineWidth: isActive ? 2 : 1.0,
               },
               label: {
                 text: isActive ? `${obj.name} (NORAD: ${obj.norad_id})` : isConjunctionTarget ? `[CONJ] ${obj.name}` : obj.name,
                 font: isActive ? '12px Share Tech Mono, sans-serif' : '9px Share Tech Mono, sans-serif',
-                fillColor: isConjunctionTarget && !isActive ? (isPrimary ? Color.CYAN : Color.MAGENTA) : Color.WHITE,
-                outlineColor: Color.BLACK,
+                fillColor: isConjunctionTarget && !isActive ? (isPrimary ? Color.CYAN.withAlpha(alpha) : Color.MAGENTA.withAlpha(alpha)) : Color.WHITE.withAlpha(alpha),
+                outlineColor: Color.BLACK.withAlpha(alpha),
                 outlineWidth: isActive ? 2.5 : 1.5,
                 style: LabelStyle.FILL_AND_OUTLINE,
                 verticalOrigin: VerticalOrigin.BOTTOM,
@@ -355,7 +361,110 @@ export const CesiumViewer: React.FC = () => {
     }
     toRemove.forEach(ent => viewer.entities.remove(ent));
 
-  }, [selectedObjects, liveObjectStates, liveTrackingEnabled, activeObject, activeState, activeConjunctionResult]);
+  }, [selectedObjects, liveObjectStates, liveTrackingEnabled, activeObject, activeState, activeConjunctionResult, replayEnabled, replayEphemeris]);
+
+  // --- 4.5. Render Replay Mode Entities ---
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    const replaySatId = 'replay-satellite';
+    const replayOrbitId = 'replay-orbit-path';
+    const replayTrackId = 'replay-ground-track';
+    const replayPointId = 'replay-current-ground-point';
+
+    const existingSat = viewer.entities.getById(replaySatId);
+    const existingOrbit = viewer.entities.getById(replayOrbitId);
+    const existingTrack = viewer.entities.getById(replayTrackId);
+    const existingPoint = viewer.entities.getById(replayPointId);
+
+    if (replayEnabled && replayEphemeris && replayEphemeris.length > 0 && activeObject) {
+      const state = replayEphemeris[replayIndex];
+      if (!state) return;
+
+      const pos = cartesianFromGeodetic(state.latitude_deg, state.longitude_deg, state.altitude_km);
+      const groundPos = groundTrackCartesian(state.latitude_deg, state.longitude_deg, 2000);
+
+      // Replay Satellite
+      if (existingSat) {
+        existingSat.position = pos as any;
+      } else {
+        viewer.entities.add({
+          id: replaySatId,
+          position: pos,
+          point: {
+            pixelSize: 14,
+            color: Color.YELLOW,
+            outlineColor: Color.BLACK,
+            outlineWidth: 2,
+          },
+          label: {
+            text: `[REPLAY] ${activeObject.name}`,
+            font: '13px Share Tech Mono, sans-serif',
+            fillColor: Color.YELLOW,
+            outlineColor: Color.BLACK,
+            outlineWidth: 3,
+            style: LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: VerticalOrigin.BOTTOM,
+            pixelOffset: new Cartesian2(0, -15)
+          }
+        });
+      }
+
+      // Replay Orbit Path
+      if (!existingOrbit) {
+        const orbitPositions = replayEphemeris.map(s => 
+          cartesianFromGeodetic(s.latitude_deg, s.longitude_deg, s.altitude_km)
+        );
+        viewer.entities.add({
+          id: replayOrbitId,
+          polyline: {
+            positions: orbitPositions,
+            width: 3,
+            material: Color.YELLOW.withAlpha(0.5),
+            arcType: ArcType.NONE
+          }
+        });
+      }
+
+      // Replay Ground Track
+      if (!existingTrack) {
+        const trackPositions = replayEphemeris.map(s => 
+          groundTrackCartesian(s.latitude_deg, s.longitude_deg, 2000)
+        );
+        viewer.entities.add({
+          id: replayTrackId,
+          polyline: {
+            positions: trackPositions,
+            width: 2.5,
+            material: Color.YELLOW.withAlpha(0.3),
+            arcType: ArcType.GEODESIC
+          }
+        });
+      }
+
+      // Replay Ground Point
+      if (existingPoint) {
+        existingPoint.position = groundPos as any;
+      } else {
+        viewer.entities.add({
+          id: replayPointId,
+          position: groundPos,
+          point: {
+            pixelSize: 8,
+            color: Color.YELLOW.withAlpha(0.8),
+            outlineColor: Color.BLACK,
+            outlineWidth: 1,
+          }
+        });
+      }
+    } else {
+      if (existingSat) viewer.entities.remove(existingSat);
+      if (existingOrbit) viewer.entities.remove(existingOrbit);
+      if (existingTrack) viewer.entities.remove(existingTrack);
+      if (existingPoint) viewer.entities.remove(existingPoint);
+    }
+  }, [replayEnabled, replayIndex, replayEphemeris, activeObject]);
 
   // --- 5. Camera Fly-To Active Satellite (On Focus Change Only) ---
   useEffect(() => {
@@ -381,20 +490,6 @@ export const CesiumViewer: React.FC = () => {
       prevActiveNoradIdRef.current = null;
     }
   }, [activeObject]); // Only trigger when activeObject changes, preventing ticks from snapping camera
-
-  // Manual Trigger to center camera on target
-  const triggerFlyTo = () => {
-    const viewer = viewerRef.current;
-    if (!viewer) return;
-    if (!activeObject) return;
-    const satEntity = viewer.entities.getById(`live-object-${activeObject.norad_id}`);
-    if (satEntity) {
-      viewer.flyTo(satEntity, {
-        duration: 2.0,
-        offset: new HeadingPitchRange(0, -Math.PI / 4, 1500000)
-      });
-    }
-  };
 
   // --- 6. Render Catalog Snapshot Layer ---
   useEffect(() => {
@@ -427,177 +522,96 @@ export const CesiumViewer: React.FC = () => {
     }
   }, [catalogLayerEnabled, catalogLayerObjects]);
 
-  // --- 7. Draggable Panel State ---
-  const [panelPos, setPanelPos] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef({ mouseX: 0, mouseY: 0, panelX: 0, panelY: 0 });
-
+  // --- Hover interaction for Ephemeris Ghost ---
   useEffect(() => {
-    if (!isDragging) return;
+    const viewer = viewerRef.current;
+    if (!viewer) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const dx = e.clientX - dragStartRef.current.mouseX;
-      const dy = e.clientY - dragStartRef.current.mouseY;
-      setPanelPos({
-        x: dragStartRef.current.panelX + dx,
-        y: dragStartRef.current.panelY + dy
-      });
-    };
+    const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
+    const ghostId = 'ephemeris-hover-ghost';
 
-    const handleMouseUp = () => setIsDragging(false);
+    handler.setInputAction((movement: any) => {
+      const pickedObject = viewer.scene.pick(movement.endPosition);
+      if (pickedObject && pickedObject.id && (pickedObject.id.id === 'replay-orbit-path' || pickedObject.id.id === 'active-orbit-path')) {
+        
+        const ephemeris = pickedObject.id.id === 'replay-orbit-path' ? replayEphemeris : activeEphemeris;
+        if (!ephemeris || ephemeris.length === 0) return;
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+        // Find closest point in 2D
+        let minDistance = Infinity;
+        let closestState = null;
+        let closestPos3D = null;
+
+        for (let i = 0; i < ephemeris.length; i++) {
+          const state = ephemeris[i];
+          const pos3D = cartesianFromGeodetic(state.latitude_deg, state.longitude_deg, state.altitude_km);
+          const pos2D = SceneTransforms.worldToWindowCoordinates(viewer.scene, pos3D);
+          if (pos2D) {
+            const dist = Cartesian2.distance(pos2D, movement.endPosition);
+            if (dist < minDistance) {
+              minDistance = dist;
+              closestState = state;
+              closestPos3D = pos3D;
+            }
+          }
+        }
+
+        if (closestState && minDistance < 50) { // threshold
+          const existingGhost = viewer.entities.getById(ghostId);
+          const timeStr = new Date(closestState.timestamp_utc).toISOString().substring(11, 19);
+          const text = `T: ${timeStr}\nAlt: ${closestState.altitude_km.toFixed(1)} km`;
+          
+          if (existingGhost) {
+            existingGhost.position = closestPos3D as any;
+            if (existingGhost.label) existingGhost.label.text = text as any;
+          } else {
+            viewer.entities.add({
+              id: ghostId,
+              position: closestPos3D as any,
+              point: {
+                pixelSize: 8,
+                color: Color.CYAN,
+                outlineColor: Color.WHITE,
+                outlineWidth: 2,
+              },
+              label: {
+                text: text,
+                font: '11px Share Tech Mono, sans-serif',
+                fillColor: Color.WHITE,
+                outlineColor: Color.BLACK,
+                outlineWidth: 2,
+                style: LabelStyle.FILL_AND_OUTLINE,
+                verticalOrigin: VerticalOrigin.BOTTOM,
+                pixelOffset: new Cartesian2(0, -10),
+                backgroundColor: new Color(0, 0, 0, 0.7),
+                showBackground: true,
+              }
+            });
+          }
+        } else {
+          const existingGhost = viewer.entities.getById(ghostId);
+          if (existingGhost) viewer.entities.remove(existingGhost);
+        }
+
+      } else {
+        const existingGhost = viewer.entities.getById(ghostId);
+        if (existingGhost) viewer.entities.remove(existingGhost);
+      }
+    }, ScreenSpaceEventType.MOUSE_MOVE);
+
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      if (!handler.isDestroyed()) {
+        handler.destroy();
+      }
+      const existingGhost = viewerRef.current?.entities.getById(ghostId);
+      if (existingGhost && viewerRef.current) viewerRef.current.entities.remove(existingGhost);
     };
-  }, [isDragging]);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    dragStartRef.current = {
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      panelX: panelPos.x,
-      panelY: panelPos.y
-    };
-  };
+  }, [replayEphemeris, activeEphemeris]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Floating Layer Visualization Control Panel */}
-      <div className="glass-panel" style={{
-        position: 'absolute',
-        top: '16px',
-        right: '16px',
-        padding: '12px 16px',
-        borderRadius: '8px',
-        zIndex: 5,
-        minWidth: '220px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        fontSize: '12px',
-        color: 'var(--text-bright)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
-        border: '1px solid var(--border-color)',
-        pointerEvents: 'auto',
-        transform: `translate(${panelPos.x}px, ${panelPos.y}px)`,
-        resize: 'both',
-        overflow: 'hidden'
-      }}>
-        <div 
-          onMouseDown={handleMouseDown}
-          style={{ 
-            fontWeight: 600, 
-            borderBottom: '1px solid var(--border-color)', 
-            paddingBottom: '6px', 
-            fontSize: '11px', 
-            textTransform: 'uppercase', 
-            letterSpacing: '0.05em', 
-            color: 'var(--accent-cyan)',
-            cursor: isDragging ? 'grabbing' : 'grab',
-            userSelect: 'none'
-          }}>
-          Globe Layer Controls
-        </div>
-        
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <input 
-            type="checkbox" 
-            checked={showOrbitPath} 
-            onChange={(e) => setShowOrbitPath(e.target.checked)}
-            style={{ accentColor: 'var(--accent-cyan)' }}
-          />
-          Show Orbit Path
-        </label>
-        
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <input 
-            type="checkbox" 
-            checked={showGroundTrack} 
-            onChange={(e) => setShowGroundTrack(e.target.checked)}
-            style={{ accentColor: 'var(--accent-cyan)' }}
-          />
-          Show Ground Track
-        </label>
-        
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <input 
-            type="checkbox" 
-            checked={showObserver} 
-            onChange={(e) => setShowObserver(e.target.checked)}
-            style={{ accentColor: 'var(--accent-cyan)' }}
-          />
-          Show Observer Station
-        </label>
-
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '2px' }}>
-          <input 
-            type="checkbox" 
-            checked={enableEarthLighting} 
-            onChange={(e) => setEnableEarthLighting(e.target.checked)}
-            style={{ accentColor: 'var(--accent-orange)' }}
-          />
-          Earth Sun Lighting
-        </label>
-
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <input 
-            type="checkbox" 
-            checked={enableEarthRotation} 
-            onChange={(e) => setEnableEarthRotation(e.target.checked)}
-            style={{ accentColor: 'var(--accent-orange)' }}
-          />
-          Real-Time Earth Rotation
-        </label>
-
-        <label style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '8px', 
-          cursor: activeObject ? 'pointer' : 'not-allowed', 
-          borderTop: '1px solid var(--border-color)', 
-          paddingTop: '6px',
-          opacity: activeObject ? 1 : 0.5
-        }}>
-          <input 
-            type="checkbox" 
-            checked={followActiveObject} 
-            onChange={(e) => setFollowActiveObject(e.target.checked)}
-            disabled={!activeObject}
-            style={{ accentColor: 'var(--accent-cyan)', cursor: activeObject ? 'pointer' : 'not-allowed' }}
-          />
-          Camera Lock Follow
-        </label>
-
-        {activeObject && (
-          <button
-            onClick={triggerFlyTo}
-            style={{
-              marginTop: '4px',
-              padding: '6px 10px',
-              borderRadius: '4px',
-              border: 'none',
-              backgroundColor: 'var(--accent-cyan)',
-              color: 'var(--text-bright)',
-              fontSize: '11px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              transition: 'background-color 0.2s'
-            }}
-          >
-            ✈️ Center Active Target
-          </button>
-        )}
-      </div>
     </div>
   );
 };

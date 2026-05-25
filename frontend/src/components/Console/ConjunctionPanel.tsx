@@ -68,18 +68,21 @@ export const ConjunctionPanel: React.FC = () => {
         </h2>
       </div>
       
-      <div style={{ 
-        backgroundColor: 'rgba(234, 179, 8, 0.1)',
-        border: '1px solid var(--accent-orange)',
-        borderRadius: '6px',
-        padding: '10px 14px',
-        fontSize: '11px',
-        color: 'var(--accent-orange)',
-        fontWeight: 600,
-        lineHeight: '1.4'
+      <details style={{
+        fontSize: '10px',
+        color: 'var(--text-muted)',
+        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '4px',
+        padding: '6px 8px'
       }}>
-        ⚠️ DISCLAIMER: Conjunction Screening uses TLE/GP-based SGP4 propagation and geometric miss-distance evaluation. It does not compute collision probability because public TLE/GP data does not include covariance.
-      </div>
+        <summary style={{ cursor: 'pointer', outline: 'none', fontWeight: 600 }}>
+          ⓘ Geometric miss-distance screening — not collision probability.
+        </summary>
+        <div style={{ marginTop: '6px', lineHeight: '1.4' }}>
+          <strong>Scientific note:</strong> Conjunction Screening uses TLE/GP-based SGP4 propagation and geometric miss-distance evaluation. It does not compute collision probability because public TLE/GP data does not include covariance.
+        </div>
+      </details>
       
       <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
         <div 

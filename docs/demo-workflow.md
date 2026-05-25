@@ -55,7 +55,13 @@ npm run dev
 - Click **Start Live Tracking**.
 - **Explanation**: "We have now established a WebSocket connection. The backend is running high-frequency in-memory SGP4 physics to stream state updates at 1 Hz. *Note: This is live TLE-based tracking, not direct spacecraft telemetry.*"
 
-### 10. Load Catalog Layer
+### 10. Mission Replay Timeline
+- On the **Bottom Panel** (or relevant section), locate the **Timeline Controls**.
+- Select a start and end time, then click **Generate Replay**.
+- Scrub through the timeline using the slider.
+- **Explanation**: "The Mission Replay feature pre-calculates the satellite's state over the selected time window using TLE-based SGP4 propagation, allowing us to scrub back and forth. This is an offline replay, not live telemetry."
+
+### 11. Load Catalog Layer
 - On the **Left Dock**, open the **Catalog Layer** section.
 - Set the limit to `1000` objects and click **Load Snapshot**.
 - **Explanation**: "This triggers an All-Catalog Snapshot. The system is computing the position of 1,000 objects for this exact timestamp. It is highly optimized for situational awareness visualization."
@@ -65,12 +71,24 @@ npm run dev
 - Choose **Primary vs Filtered Catalog** mode, leave filters on `ALL`, and click **Run Screening**.
 - **Explanation**: "The system is performing a geometric close approach screening. It evaluates Euclidean miss-distances between the ISS and thousands of cataloged objects over the next few days. *Note: This does not compute collision probability, as public TLE/GP data lacks covariance matrices.*"
 
-### 12. Export Data
+### 12. Evaluate Ground Station Visibility
+- On the **Right Dock**, open the **Visibility / Passes** panel.
+- Enter an observer location (e.g., Latitude `39.92`, Longitude `32.85` for Ankara).
+- Click **Evaluate Visibility**.
+- **Explanation**: "The system computes the relative azimuth, elevation, and range for objects against the local horizon. *Note: This is elevation-based geometric visibility. It does not guarantee optical brightness or naked-eye visibility, which depend on illumination, weather, and local sky conditions.*"
+
+### 13. Export Data
 - On the **Right Dock**, scroll down to the **Data Export System** panel.
 - Click **Ephemeris (CSV)** and **3D Trajectory (CZML)**.
 - **Explanation**: "All exports are processed entirely client-side with zero latency. The data is converted directly from our frontend state into standardized formats."
 
-### 13. Generate Mission Report
+### 14. Query the Mission Knowledge Assistant
+- Open the chat interface in the top/bottom section of the dashboard.
+- Type "What is the ISS?" or a similar domain question.
+- Then ask "Is this direct telemetry?" to trigger the AI guardrails.
+- **Explanation**: "The Mission Knowledge Assistant answers astrodynamics questions via a secure backend proxy, meaning AI keys remain safe. It is strictly informational—if we ask for direct operational telemetry or collision probabilities, it is hard-coded to refuse, maintaining strict scientific boundaries."
+
+### 15. Generate Mission Report
 - In the **Data Export System**, click **Rapor (Türkçe)**.
 - Open the downloaded Markdown file.
 - **Explanation**: "This auto-generates a comprehensive mission analysis report, embedding our current propagation states, pass predictions, and conjunction screening results, complete with necessary scientific disclaimers."

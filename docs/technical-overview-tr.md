@@ -20,6 +20,9 @@ Sistemdeki **Live Tracking (Canlı Takip)** özelliği, arka plandaki SGP4 fizik
 
 > **DİKKAT:** Bu veri akışı, doğrudan uydudan alınan bir sinyal (direct spacecraft telemetry) veya gerçek zamanlı radar takibi (radar tracking) **DEĞİLDİR**. Sistem, elindeki en güncel TLE/GP verisini matematiksel olarak ileriye sararak (TLE-derived state estimate) uydunun nerede olması gerektiğini çizer.
 
+## 4.1 Görev Tekrar Oynatma (Mission Replay)
+Görev tekrar oynatma modu, seçili objenin belirli bir zaman aralığı için TLE/GP tabanlı SGP4 propagasyonu ile önceden hesaplanan yörünge durumlarını kullanır. Bu mod doğrudan uydu telemetrisi değildir.
+
 ## 5. Conjunction Screening ve Çarpışma Olasılığı (Pc)
 TR-SAT, seçilen hedefler ile katalogdaki diğer nesneler arasında yaklaşma mesafesi analizi (Conjunction Screening) yapabilmektedir.
 
@@ -36,3 +39,11 @@ Sistem, seçilen binlerce nesnenin yalnızca belirli, tek bir anlık zaman dilim
 Sistem tarafından dışa aktarılan **CZML** yörünge dosyaları ve **CSV** pozisyon çıktıları; görselleştirme, sunum ve akademik analiz (replay) amaçlıdır.
 
 Hiçbir şekilde gerçek uzay görevlerinde uydu komuta etmek amacıyla "onaylı operasyonel efemeris" (certified operational ephemeris) olarak kullanılamaz. Sonuçların doğruluğu, sisteme senkronize edilen TLE/GP verisinin güncelliğine (age) doğrudan bağlıdır. TLE verisi eskidikçe matematiksel sapmalar artacaktır.
+
+## 8. Space Environment Dashboard ve Orbital Regime Classification
+
+Phase 19 kapsamında eklenen **Space Environment Dashboard**, yerel veritabanına indirilmiş (sync edilmiş) uydu kataloğu üzerinde durum analizleri (analytics) gerçekleştirir.
+
+- Bu analizler "durumsal farkındalık" (situational awareness) amacı taşır.
+- Yörünge rejim sınıflandırması (LEO, MEO, GEO, HEO), TLE içindeki `mean_motion` (ortalama hareket) verisinden elde edilen yarı büyük eksen (semi-major axis) ve yaklaşık irtifaya dayalı olarak hesaplanır. GEO rejiminde ±1500 km tolerans kullanılır.
+- Bu gösterge paneli, gerçek zamanlı uzay ortamı trafiği analitiği veya onaylı (certified) operasyonel bir Uzay Durumsal Farkındalığı (SSA) ürünü olduğunu iddia etmez. Sonuçlar eldeki TLE verisinin yaşına göre "Stale" (Eskimiş/Bayat) olabilir. TLE verisi yaşı 7 günü geçen nesneler "Stale" kabul edilir.

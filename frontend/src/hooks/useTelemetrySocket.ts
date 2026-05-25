@@ -10,7 +10,7 @@ function buildWsUrl() {
     return `${explicit.replace(/\/$/, "")}${WS_ENDPOINT}`;
   }
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+  const apiBase = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : "http://127.0.0.1:8000");
   const wsBase = apiBase
     .replace(/^https:\/\//, "wss://")
     .replace(/^http:\/\//, "ws://")

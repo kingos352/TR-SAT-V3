@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8000');
 
 // --- TYPES ---
 
@@ -96,6 +96,27 @@ export interface PassWindow {
   range_at_max_km?: number;
 }
 
+export interface DetailedPassProfilePoint {
+  timestamp_utc: string;
+  elevation_deg: number;
+  azimuth_deg: number;
+  range_km: number;
+}
+
+export interface DetailedPassWindow {
+  aos_time_utc: string;
+  max_time_utc: string;
+  los_time_utc: string;
+  duration_seconds: number;
+  max_elevation_deg: number;
+  azimuth_aos_deg?: number;
+  azimuth_max_deg?: number;
+  azimuth_los_deg?: number;
+  range_at_max_km?: number;
+  quality_label: string; // LOW, GOOD, EXCELLENT, OVERHEAD
+  elevation_profile: DetailedPassProfilePoint[];
+}
+
 export interface ConjunctionScreenRequest {
   mode: "selected_vs_selected" | "primary_vs_catalog";
   primary_norad_ids: number[];
@@ -124,6 +145,54 @@ export interface ConjunctionScreenResponse {
   mode: string;
   results: ConjunctionResult[];
   computation_time_ms: number;
+}
+
+// --- VISIBILITY ---
+
+export interface VisibilityScreenRequest {
+  timestamp_utc?: string;
+  observer_latitude_deg: number;
+  observer_longitude_deg: number;
+  observer_elevation_m: number;
+  min_elevation_deg: number;
+  high_elevation_deg?: number;
+  object_type?: string;
+  category?: string;
+  source?: string;
+  source_group?: string;
+  include_debris?: boolean;
+  limit: number;
+  max_candidates?: number;
+}
+
+export interface VisibilityResultItem {
+  norad_id: string;
+  name: string;
+  object_type: string;
+  category: string;
+  source: string;
+  source_group: string;
+  elevation_deg: number;
+  azimuth_deg: number;
+  range_km: number;
+  visibility_class: string;
+  reliability_status: string;
+  tle_age_days: number;
+}
+
+export interface VisibilityScreenResponse {
+  timestamp_utc: string;
+  observer: {
+    latitude_deg: number;
+    longitude_deg: number;
+    elevation_m: number;
+  };
+  returned_count: number;
+  evaluated_count: number;
+  skipped_count: number;
+  objects: VisibilityResultItem[];
+  warnings: string[];
+  disclaimer: string;
 }
 
 // --- CATALOG VISUALIZATION ---
@@ -273,12 +342,45 @@ export async function getCatalogPasses(payload: {
   end_time_utc: string;
   min_elevation_deg: number;
 }): Promise<PassWindow[]> {
-  return apiRequest<PassWindow[]>(`${API_BASE_URL}/api/v1/observer/catalog/passes`, {
+  const resp = await fetch(`${API_BASE_URL}/api/v1/observer/catalog/passes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(payload)
   });
+  if (!resp.ok) throw new Error('Failed to compute passes');
+  return resp.json();
 }
+
+export const getDetailedPasses = async (
+  norad_id: number,
+  observer_lat: number,
+  observer_lon: number,
+  observer_elev: number,
+  start_time: string,
+  end_time: string,
+  min_elevation: number = 10.0,
+  step_seconds: number = 30
+): Promise<DetailedPassWindow[]> => {
+  const resp = await fetch(`${API_BASE_URL}/api/v1/observer/catalog/passes/detail`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      norad_id,
+      observer_latitude_deg: observer_lat,
+      observer_longitude_deg: observer_lon,
+      observer_elevation_m: observer_elev,
+      start_time_utc: start_time,
+      end_time_utc: end_time,
+      min_elevation_deg: min_elevation,
+      profile_step_seconds: step_seconds
+    })
+  });
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => null);
+    throw new Error(data?.detail || 'Failed to compute detailed passes');
+  }
+  return resp.json();
+};
 
 // --- SPACE-TRACK ---
 
@@ -314,4 +416,86 @@ export async function getCatalogSnapshot(payload: CatalogSnapshotRequest): Promi
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
+}
+
+// --- VISIBILITY ---
+
+export async function screenVisibility(payload: VisibilityScreenRequest): Promise<VisibilityScreenResponse> {
+  return apiRequest<VisibilityScreenResponse>(`${API_BASE_URL}/api/v1/visibility/current`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+// --- ASSISTANT ---
+
+export interface AssistantChatRequest {
+  message: string;
+  context?: any;
+}
+
+export interface AssistantChatResponse {
+  reply: string;
+  mode: string;
+  context_used?: any;
+}
+
+export async function sendAssistantMessage(payload: AssistantChatRequest): Promise<AssistantChatResponse> {
+  return apiRequest<AssistantChatResponse>(`${API_BASE_URL}/api/v1/assistant/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+// --- ANALYTICS ---
+
+export interface DistributionBin {
+  label: string;
+  count: number;
+}
+
+export interface FreshnessSummary {
+  total_evaluated: number;
+  fresh_count: number;
+  stale_count: number;
+  average_age_days?: number | null;
+  max_age_days?: number | null;
+}
+
+export interface CatalogAnalyticsSummary {
+  total_objects: number;
+  by_object_type: Record<string, number>;
+  by_source: Record<string, number>;
+  by_category: Record<string, number>;
+  by_orbital_regime: Record<string, number>;
+  altitude_bins: DistributionBin[];
+  inclination_bins: DistributionBin[];
+  freshness_summary: FreshnessSummary;
+  stale_percentage: number;
+  debris_percentage: number;
+  warnings: string[];
+  disclaimer: string;
+}
+
+export async function getCatalogAnalyticsSummary(filters?: {
+  source?: string;
+  source_group?: string;
+  category?: string;
+  object_type?: string;
+}): Promise<CatalogAnalyticsSummary> {
+  let url = `${API_BASE_URL}/api/v1/analytics/catalog-summary`;
+  if (filters) {
+    const params = new URLSearchParams();
+    if (filters.source) params.append('source', filters.source);
+    if (filters.source_group) params.append('source_group', filters.source_group);
+    if (filters.category) params.append('category', filters.category);
+    if (filters.object_type) params.append('object_type', filters.object_type);
+    const qs = params.toString();
+    if (qs) url += `?${qs}`;
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return res.json();
 }

@@ -14,10 +14,107 @@ export const StatusBar: React.FC = () => {
     liveTrackingEnabled,
     liveConnectionStatus,
     liveRateHz,
-    lastTelemetryFrameUtc
+    lastTelemetryFrameUtc,
+    showOrbitPath, setShowOrbitPath,
+    showGroundTrack, setShowGroundTrack,
+    showObserver, setShowObserver,
+    enableEarthLighting, setEnableEarthLighting,
+    enableEarthRotation, setEnableEarthRotation,
+    followActiveObject, setFollowActiveObject
   } = useConsoleStore();
 
   const [cesiumTokenMissing, setCesiumTokenMissing] = useState(false);
+  const [showGlobeControls, setShowGlobeControls] = useState(false);
+
+  const GlobeControlsMenu = () => (
+    <div style={{
+      position: 'absolute',
+      top: '100%',
+      left: 0,
+      marginTop: '8px',
+      backgroundColor: 'rgba(15, 23, 42, 0.95)',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid var(--border-color)',
+      borderRadius: '8px',
+      padding: '12px',
+      minWidth: '220px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px',
+      boxShadow: '0 10px 30px rgba(0,0,0,0.8)',
+      zIndex: 100,
+      color: 'var(--text-bright)'
+    }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+        <input 
+          type="checkbox" 
+          checked={showOrbitPath} 
+          onChange={(e) => setShowOrbitPath(e.target.checked)}
+          style={{ accentColor: 'var(--accent-cyan)' }}
+        />
+        Show Orbit Path
+      </label>
+      
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+        <input 
+          type="checkbox" 
+          checked={showGroundTrack} 
+          onChange={(e) => setShowGroundTrack(e.target.checked)}
+          style={{ accentColor: 'var(--accent-cyan)' }}
+        />
+        Show Ground Track
+      </label>
+      
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+        <input 
+          type="checkbox" 
+          checked={showObserver} 
+          onChange={(e) => setShowObserver(e.target.checked)}
+          style={{ accentColor: 'var(--accent-cyan)' }}
+        />
+        Show Observer Station
+      </label>
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '2px' }}>
+        <input 
+          type="checkbox" 
+          checked={enableEarthLighting} 
+          onChange={(e) => setEnableEarthLighting(e.target.checked)}
+          style={{ accentColor: 'var(--accent-orange)' }}
+        />
+        Earth Sun Lighting
+      </label>
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+        <input 
+          type="checkbox" 
+          checked={enableEarthRotation} 
+          onChange={(e) => setEnableEarthRotation(e.target.checked)}
+          style={{ accentColor: 'var(--accent-orange)' }}
+        />
+        Real-Time Earth Rotation
+      </label>
+
+      <label style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '8px', 
+        cursor: activeObject ? 'pointer' : 'not-allowed', 
+        borderTop: '1px solid var(--border-color)', 
+        paddingTop: '6px',
+        opacity: activeObject ? 1 : 0.5
+      }}>
+        <input 
+          type="checkbox" 
+          checked={followActiveObject} 
+          onChange={(e) => setFollowActiveObject(e.target.checked)}
+          disabled={!activeObject}
+          style={{ accentColor: 'var(--accent-cyan)', cursor: activeObject ? 'pointer' : 'not-allowed' }}
+        />
+        Camera Lock Follow
+      </label>
+    </div>
+  );
 
   // Dynamic ticking UTC Clock
   useEffect(() => {
@@ -102,17 +199,55 @@ export const StatusBar: React.FC = () => {
           Local-first orbital intelligence and mission analysis platform
         </div>
 
-        {cesiumTokenMissing && (
-          <div className="mono-text" style={{
-            fontSize: '11px',
-            color: 'var(--accent-orange)',
-            backgroundColor: 'rgba(249, 115, 22, 0.1)',
-            border: '1px solid rgba(249, 115, 22, 0.3)',
-            padding: '2px 8px',
-            borderRadius: '4px',
-            textTransform: 'uppercase'
-          }}>
-            🛰️ Fallback Globe (No Ion Token)
+        {cesiumTokenMissing ? (
+          <div style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setShowGlobeControls(!showGlobeControls)}
+              className="mono-text" 
+              style={{
+                fontSize: '11px',
+                color: 'var(--accent-orange)',
+                backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                border: '1px solid rgba(249, 115, 22, 0.3)',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              🛰️ Fallback Globe (No Ion Token) <span>{showGlobeControls ? '▼' : '►'}</span>
+            </button>
+            {showGlobeControls && (
+              <GlobeControlsMenu />
+            )}
+          </div>
+        ) : (
+          <div style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setShowGlobeControls(!showGlobeControls)}
+              className="mono-text" 
+              style={{
+                fontSize: '11px',
+                color: 'var(--accent-cyan)',
+                backgroundColor: 'rgba(0, 216, 255, 0.1)',
+                border: '1px solid rgba(0, 216, 255, 0.3)',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              🌍 Globe Controls <span>{showGlobeControls ? '▼' : '►'}</span>
+            </button>
+            {showGlobeControls && (
+              <GlobeControlsMenu />
+            )}
           </div>
         )}
       </div>

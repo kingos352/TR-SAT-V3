@@ -153,3 +153,43 @@ class PassWindow(BaseModel):
     range_at_max_km: Optional[float] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+class CatalogDetailedPassRequest(BaseModel):
+    norad_id: int
+    observer_latitude_deg: float
+    observer_longitude_deg: float
+    observer_elevation_m: float = 0.0
+    start_time_utc: datetime
+    end_time_utc: datetime
+    min_elevation_deg: float = 10.0
+    profile_step_seconds: int = 30
+
+    @model_validator(mode='after')
+    def validate_prediction_window(self) -> 'CatalogDetailedPassRequest':
+        if self.end_time_utc <= self.start_time_utc:
+            raise ValueError("end_time_utc must be after start_time_utc")
+        if self.profile_step_seconds < 10:
+            raise ValueError("profile_step_seconds must be >= 10")
+        return self
+
+class DetailedPassProfilePoint(BaseModel):
+    timestamp_utc: datetime
+    elevation_deg: float
+    azimuth_deg: float
+    range_km: float
+
+class DetailedPassWindow(BaseModel):
+    aos_time_utc: datetime
+    max_time_utc: datetime
+    los_time_utc: datetime
+    duration_seconds: float
+    max_elevation_deg: float
+    azimuth_aos_deg: Optional[float] = None
+    azimuth_max_deg: Optional[float] = None
+    azimuth_los_deg: Optional[float] = None
+    range_at_max_km: Optional[float] = None
+    quality_label: str
+    elevation_profile: list[DetailedPassProfilePoint]
+
+    model_config = ConfigDict(from_attributes=True)
+

@@ -9,8 +9,12 @@ Powered by TLE/GP-based SGP4 propagation and a CesiumJS 3D mission view, TR-SAT 
 *   **TLE/GP-Based SGP4 Propagation**: Mathematically propagates satellite positions based on Two-Line Element (TLE) and General Perturbation (GP) sets.
 *   **Live TLE-Based Tracking**: Streams high-frequency (up to 5 Hz) orbital updates to the frontend using in-memory SGP4 physics and WebSocket connections.
 *   **Conjunction Screening MVP**: Geometric close approach screening between primary targets and catalog objects to detect miss-distances.
+*   **Mission Replay Timeline**: Scrub through pre-calculated SGP4-propagated states within a defined time window.
 *   **All-Catalog Progressive Visualization**: Snapshot visualization capable of rendering thousands of Resident Space Objects (RSOs) simultaneously.
+*   **Ground Station Visibility**: Compute relative azimuth, elevation, and range to determine which objects are geometrically visible from a given terrestrial observer location.
 *   **Client-Side Export System**: Zero-latency exports of Ephemeris (CSV), Trajectories (CZML), Ground Tracks (GeoJSON), and Mission Reports.
+*   **Mission Knowledge Assistant (AI)**: An integrated LLM agent for answering domain-specific orbital mechanics questions, built with a secure proxy architecture and strict guardrails.
+*   **Space Environment Dashboard**: Analytical tool summarizing local RSO catalog by orbital regime, altitude, inclination, source, object type, and TLE staleness metrics. Note: Regime classification relies on approximate derived characteristics and is meant for situational awareness, not certified operational SSA.
 *   **Local-First Architecture**: Powered by a local SQLite persistence layer for TLE ingestion, ensuring fast, offline-capable analysis.
 
 > [!WARNING]
@@ -48,45 +52,35 @@ TR-SAT operates as a decoupled monorepo:
 
 ## ⚙️ Quick Start
 
-### 1. Environment Variables
-Create a `.env` file in the project root containing:
-```env
-APP_NAME="TR-SAT Mission Control V3"
-APP_ENV=development
-DATABASE_URL=sqlite:///./trsat_v3.sqlite
-CORS_ORIGINS=http://localhost:5173
+### One-Click Launch (Windows)
+The easiest way to run TR-SAT Mission Control V3 is using the provided one-click launcher scripts.
 
-# Required for 3D Globe Visualization
-CESIUM_ION_TOKEN=
-VITE_CESIUM_ION_TOKEN=
+1. **Build the Application** (Run this once or after updates):
+   Double-click `TR-SAT-Build.bat`. This script will automatically set up your `.env` file, install Python and Node dependencies, and build the React frontend.
+2. **Start the Application**:
+   Double-click `TR-SAT-Start.bat`. This will start the FastAPI backend on port 8000 (serving the built frontend) and automatically open your browser at `http://127.0.0.1:8000`.
 
-# Space-Track (Optional, Authenticated GP/TLE source)
-# WARNING: Do not commit the actual .env file with your credentials!
-SPACETRACK_USERNAME=
-SPACETRACK_PASSWORD=
+### Manual Development Mode
+If you prefer running the separate dev servers:
 
-# Frontend Configuration
-VITE_API_BASE_URL=http://127.0.0.1:8000
-VITE_WS_BASE_URL=ws://127.0.0.1:8000
-```
+1. **Backend Setup**:
+   ```bash
+   cd backend
+   py -3.12 -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   py -m pip install -r requirements.txt
+   py -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+   ```
 
-### 2. Backend Setup
-```bash
-cd backend
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-py -m pip install -r requirements.txt
-py -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
+2. **Frontend Setup**:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+   The frontend interface will be available at `http://localhost:5173`.
 
-### 3. Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend interface will be available at `http://localhost:5173`.
+*See `docs/one-click-launch.md` for troubleshooting and requirements.*
 
 ---
 
@@ -102,7 +96,9 @@ A typical demonstration workflow follows these steps:
 7. Start **Live Tracking** to observe the TLE-derived state estimate in real-time.
 8. Load the **Catalog Layer** snapshot to visualize the surrounding space environment.
 9. Run a **Conjunction Screening** to geometrically evaluate miss-distances with nearby objects.
-10. Use the **Data Export System** to download the Ephemeris (CSV), Trajectory (CZML), and the Turkish Mission Report.
+10. Check **Ground Station Visibility** to identify which objects are currently above the local horizon.
+11. Query the **Mission Knowledge Assistant** to demonstrate AI-driven educational insights with strict scientific boundary constraints.
+12. Use the **Data Export System** to download the Ephemeris (CSV), Trajectory (CZML), and the Turkish Mission Report.
 
 For detailed steps, refer to `docs/demo-workflow.md`.
 
@@ -118,7 +114,9 @@ TR-SAT Mission Control adheres to strict scientific terminology regarding its ca
 ### ⚠️ Limitations
 *   **Not Direct Telemetry**: Live tracking is based on the latest available TLE/GP elements and UTC-time SGP4 propagation. It is *not* direct spacecraft telemetry or radar tracking.
 *   **Not Collision Probability**: The system does *not* compute probability of collision (Pc). Public TLE/GP data does not include the covariance matrices required for precise collision probability.
+*   **Visibility Conditions**: This is elevation-based geometric visibility. It does not guarantee optical brightness or naked-eye visibility, which depend on illumination, weather, and local sky conditions.
 *   **Not Certified Ephemeris**: CZML exports and ephemeris outputs are intended for visualization and situational awareness, not as certified operational ephemeris for mission command.
+*   **AI Guardrails**: The Mission Knowledge Assistant is informational only; it refuses to provide operational commands or simulate direct operational telemetry.
 
 ---
 

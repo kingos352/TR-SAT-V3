@@ -7,8 +7,13 @@ import { ObserverPanel } from './components/Console/ObserverPanel';
 import { LiveTrackingPanel } from './components/Console/LiveTrackingPanel';
 import { ConjunctionPanel } from './components/Console/ConjunctionPanel';
 import { CatalogLayerPanel } from './components/Console/CatalogLayerPanel';
+import { GroundStationVisibilityPanel } from './components/Console/GroundStationVisibilityPanel';
 
 import { ExportPanel } from './components/Console/ExportPanel';
+import { AssistantPanel } from './components/Console/AssistantPanel';
+import { MissionReplayPanel } from './components/Console/MissionReplayPanel';
+import { PassTimelinePanel } from './components/Console/PassTimelinePanel';
+import { SpaceEnvironmentDashboard } from './components/Console/SpaceEnvironmentDashboard';
 
 const App: React.FC = () => {
   return (
@@ -44,6 +49,8 @@ const App: React.FC = () => {
       }}>
         <SidePanel />
         <CatalogLayerPanel />
+        <GroundStationVisibilityPanel />
+        <PassTimelinePanel />
       </aside>
 
       {/* Center 3D Globe Visualizer */}
@@ -89,10 +96,13 @@ const App: React.FC = () => {
         zIndex: 10
       }}>
         <LiveTrackingPanel />
+        <MissionReplayPanel />
         <TelemetryPanel />
         <ObserverPanel />
+        <SpaceEnvironmentDashboard />
         <ConjunctionPanel />
         <ExportPanel />
+        <AssistantPanel />
       </aside>
     </div>
   );

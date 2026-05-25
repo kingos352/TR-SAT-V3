@@ -325,19 +325,22 @@ export const LiveTrackingPanel: React.FC = () => {
         </div>
       )}
 
-      <div style={{ 
-        backgroundColor: 'rgba(234, 179, 8, 0.1)',
-        border: '1px solid var(--accent-orange)',
-        borderRadius: '6px',
-        padding: '10px 14px',
-        fontSize: '11px',
-        color: 'var(--accent-orange)',
-        fontWeight: 600,
-        lineHeight: '1.4',
+      <details style={{
+        fontSize: '10px',
+        color: 'var(--text-muted)',
+        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '4px',
+        padding: '6px 8px',
         marginTop: '8px'
       }}>
-        ⚠️ DISCLAIMER: Live tracking is based on latest available TLE/GP elements and UTC-time SGP4 propagation. It is not direct spacecraft telemetry.
-      </div>
+        <summary style={{ cursor: 'pointer', outline: 'none', fontWeight: 600 }}>
+          ⓘ TLE/GP-based SGP4 estimate — not direct telemetry.
+        </summary>
+        <div style={{ marginTop: '6px', lineHeight: '1.4' }}>
+          <strong>Scientific note:</strong> Live tracking is based on the latest available TLE/GP elements and UTC-time SGP4 propagation. It is not direct spacecraft telemetry.
+        </div>
+      </details>
     </section>
   );
 };

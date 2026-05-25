@@ -13,6 +13,13 @@ class Settings(BaseSettings):
     SPACETRACK_USERNAME: str = ""
     SPACETRACK_PASSWORD: str = ""
 
+    # AI Assistant Configuration
+    AI_PROVIDER: str = "local"
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "anthropic/claude-3.5-sonnet:beta"
+
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),
         env_file_encoding="utf-8",

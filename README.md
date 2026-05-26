@@ -30,28 +30,6 @@ TR-SAT operates as a decoupled monorepo:
 
 ---
 
-## 📷 Screenshots & Media
-
-*Before publishing, please capture and place the following screenshots in the `docs/assets/screenshots/` directory:*
-- [ ] `mission-console.png` - Main console view with active satellite and telemetry panels.
-- [ ] `live-tracking.png` - Live WebSocket telemetry tracking in action.
-- [ ] `catalog-layer.png` - All-Catalog Snapshot rendering thousands of objects.
-- [ ] `conjunction-screening.png` - Geometric miss-distance evaluation results.
-- [ ] `export-system.png` - Client-side export panel.
-
-**How to capture clean screenshots:**
-1. Run backend and frontend servers.
-2. Put your browser in Fullscreen mode (F11).
-3. Sync the `stations` group, search for `ISS`, and set it as active.
-4. Update the orbit to draw the 3D trajectory.
-5. Take `mission-console.png`.
-6. Start Live Tracking and take `live-tracking.png`.
-7. Load the Catalog Layer (limit 1000) and take `catalog-layer.png`.
-8. Run a Conjunction Screening and take `conjunction-screening.png`.
-9. Expand the Export System panel and take `export-system.png`.
-
----
-
 ## ⚙️ Quick Start
 
 ### One-Click Launch (Windows)
@@ -96,7 +74,7 @@ If you prefer running the separate dev servers:
 
 ---
 
-## 🎬 Demo Workflow
+## Demo Workflow
 
 A typical demonstration workflow follows these steps:
 1. Start backend and frontend servers.
@@ -149,7 +127,7 @@ TR-SAT Mission Control uses a fallback offline-capable 3D globe by default. To e
 - Support for OPM/OEM ephemeris standard formats.
 
 ## 📄 License
-To be selected before public release. This project is currently for academic and personal portfolio demonstration.
+This project is currently for academic and personal portfolio demonstration.
 
 ## 🙏 Acknowledgements
 Built utilizing [Skyfield](https://rhodesmill.org/skyfield/) for astrodynamics, [CesiumJS](https://cesium.com/) for 3D rendering, and data from [CelesTrak](https://celestrak.org/) and [Space-Track](https://www.space-track.org/).
